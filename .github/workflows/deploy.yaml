@@ -31,10 +31,6 @@ jobs:
       - name: Materialize Dependencies
         run: pnpm install --frozen-lockfile
 
-        # Fix: Generate ambient type-maps so svelte-check doesn't panic over missing files
-      - name: Generate Cloudflare Ambient Types
-        run: pnpm wrangler types --env-interface CloudflareEnv worker-configuration.d.ts || touch worker-configuration.d.ts
-
       - name: Static Code Analysis (Lint & Formatting)
         run: pnpm lint
 
@@ -81,6 +77,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
+          pnpm wrangler types
           pnpm build:cloudflare
           pnpm wrangler deploy
 
