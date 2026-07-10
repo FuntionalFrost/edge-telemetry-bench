@@ -19,13 +19,19 @@ export const GET: RequestHandler = async ({ request, platform }) => {
 
 	if (typeof Deno !== 'undefined') {
 		provider = 'netlify';
-		runtimeEngine = 'Deno Deploy Core (V8 Isolate Layer)';
+		// PROOF: Accessing Deno version info directly from the Netlify Edge engine
+		// @ts-expect-error - Instruct TS to allow checking Netlify's injected runtime primitive
+		runtimeEngine = `Netlify Edge (Deno v${Deno.version.deno})`;
 	} else if (platform?.env && !request.headers.get('x-vercel-id')) {
 		provider = 'cloudflare';
 		runtimeEngine = 'Cloudflare workerd (Native V8 Isolate)';
-	} else if (request.headers.get('x-vercel-id')) {
+	}
+	// @ts-expect-error - Instruct TS to allow checking Vercel's injected runtime primitive
+	else if (globalThis.EdgeRuntime === 'vercel-edge' || request.headers.get('x-vercel-id')) {
 		provider = 'vercel';
-		runtimeEngine = 'Vercel Fluid Compute Edge Layer';
+		// PROOF: Verifying the proprietary global string injected by Vercel
+		// @ts-expect-error - Instruct TS to allow checking Vercel's injected runtime primitive
+		runtimeEngine = `Vercel Edge Runtime (${globalThis.EdgeRuntime || 'Fluid Isolate'})`;
 	}
 
 	// 2. High-Precision Event Loop Lag Measurement

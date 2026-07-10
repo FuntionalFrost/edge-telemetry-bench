@@ -38,9 +38,9 @@
 	<div class="glow-effect"></div>
 
 	<header class="hero-section">
-		<div class="badge">Active Infrastructure Node Node</div>
+		<div class="badge">Active Infrastructure Node</div>
 		<h1>Self-Aware Telemetry Console</h1>
-		<p class="desc">Programmatic look inside the active serverless isolate container</p>
+		<p class="desc">A look inside the active serverless isolate container.</p>
 	</header>
 
 	{#if loading}
@@ -102,8 +102,17 @@
 				</div>
 				<div class="large-metric">
 					<span>Internal Execution Time:</span>
-					<strong>{report.performanceTelemetry.internalComputeDurationMs.toFixed(3)} ms</strong>
+					<strong>
+						{report.performanceTelemetry.internalComputeDurationMs === 0
+							? '🛡️ 0.00 ms (Coarsened Timer)'
+							: `${report.performanceTelemetry.internalComputeDurationMs.toFixed(3)} ms`}
+					</strong>
 				</div>
+				{#if report.nodeIdentity.provider === 'cloudflare' || report.nodeIdentity.provider === 'vercel'}
+					<p class="timer-note">
+						⚠️ Clock coarsened by host runtime engine to prevent Spectre timing attacks.
+					</p>
+				{/if}
 			</section>
 
 			<section class="metric-card global-inspection">
@@ -111,7 +120,8 @@
 					Global Context Key Footprint ({report.environmentBlueprint.availableGlobalObjectsCount} keys)
 				</h3>
 				<p class="explainer">
-					First 15 system primitives exposed inside this isolate container namespace:
+					First {report.environmentBlueprint.sampleGlobalKeys.length} system primitives exposed inside
+					this isolate container namespace:
 				</p>
 				<div class="key-tags">
 					{#each report.environmentBlueprint.sampleGlobalKeys as key (key)}
