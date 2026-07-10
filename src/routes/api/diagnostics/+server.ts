@@ -4,19 +4,22 @@ import type { RequestHandler } from '@sveltejs/kit';
 const isolateSpawnTime = performance.now();
 let globalActivationCount = 0;
 
-// Removed `{ request }` destructuring since it isn't consumed by our raw global probes
-export const GET: RequestHandler = async () => {
+export const GET: RequestHandler = async ({ request }) => {
 	globalActivationCount++;
 	const encoder = new TextEncoder();
 
 	const stream = new ReadableStream({
 		async start(controller) {
 			const sendChunk = (chunk: DiagnosticStreamChunk) => {
-				controller.enqueue(encoder.encode(JSON.stringify(chunk) + '\n'));
+				try {
+					controller.enqueue(encoder.encode(JSON.stringify(chunk) + '\n'));
+				} catch {
+					// Stream context closed prematurely by client navigation
+				}
 			};
 
+			// --- CHUNK 1: IDENTITY & STATE ---
 			try {
-				// 1. IDENTITY & STATE
 				sendChunk({
 					type: 'identity',
 					data: {
@@ -33,12 +36,15 @@ export const GET: RequestHandler = async () => {
 						}
 					}
 				});
+			} catch (e) {
+				console.error('Identity probe failed', e);
+			}
 
-				// 2. CONTEXT POLLUTION (THE LEAK TEST)
+			// --- CHUNK 2: CONTEXT POLLUTION (THE LEAK TEST) ---
+			try {
 				const targetGlobal = globalThis as unknown as { __INTERROGATION_MARKER?: string };
 				const detectedMarker = targetGlobal.__INTERROGATION_MARKER || null;
 				const isPolluted = detectedMarker !== null;
-
 				const newMarker = `node_token_0x${Math.random().toString(16).slice(2, 10)}`;
 				targetGlobal.__INTERROGATION_MARKER = newMarker;
 
@@ -50,8 +56,12 @@ export const GET: RequestHandler = async () => {
 						currentAssignedMarker: newMarker
 					}
 				});
+			} catch (e) {
+				console.error('Context leak probe failed', e);
+			}
 
-				// 3. JIT & COMPILATION EVALUATION LOCK
+			// --- CHUNK 3: JIT & COMPILATION EVALUATION LOCK ---
+			try {
 				let evalAllowed = false;
 				let evalTime = -1;
 				try {
@@ -71,25 +81,40 @@ export const GET: RequestHandler = async () => {
 					type: 'jit',
 					data: { dynamicEvalAllowed: evalAllowed, evalDurationMs: evalTime }
 				});
+			} catch (e) {
+				console.error('JIT probe failed', e);
+			}
 
-				// 4. HYPERVISOR ENTROPY BENCHMARK
+			// --- CHUNK 4: HYPERVISOR ENTROPY BENCHMARK ---
+			try {
 				const entropyStart = performance.now();
-				const entropyBuffer = new Uint8Array(1024 * 1024);
+				// CRITICAL FIX: Limited to 64KB to prevent Web Crypto QuotaExceededError violations
+				const safeQuotaLimit = 64 * 1024;
+				const entropyBuffer = new Uint8Array(safeQuotaLimit);
+
 				if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
 					crypto.getRandomValues(entropyBuffer);
 				}
+
 				const entropyDuration = performance.now() - entropyStart;
-				const rate = 1 / (entropyDuration / 1000);
+				const megabytesGenerated = safeQuotaLimit / (1024 * 1024);
+				const rate = megabytesGenerated / (entropyDuration / 1000);
 
 				sendChunk({
 					type: 'entropy',
 					data: {
-						entropyGenerationRateMbSec: isFinite(rate) ? rate : 0,
+						entropyGenerationRateMbSec: isFinite(rate) && rate > 0 ? rate : 0,
 						durationMs: entropyDuration
 					}
 				});
+			} catch (e) {
+				// Fallback instead of exploding the entire stream payload
+				sendChunk({ type: 'entropy', data: { entropyGenerationRateMbSec: 0, durationMs: -1 } });
+				console.error('Entropy benchmark bypassed due to hardware layer restrictions', e);
+			}
 
-				// 5. EPHEMERAL DISK WRITE-THRU PERFORMANCE
+			// --- CHUNK 5: EPHEMERAL DISK WRITE-THRU PERFORMANCE ---
+			try {
 				let hasDiskAccess = false;
 				let diskType: 'Persistent/Ephemeral Physical' | 'In-Memory Tmpfs' | 'Completely Sandboxed' =
 					'Completely Sandboxed';
@@ -103,7 +128,7 @@ export const GET: RequestHandler = async () => {
 
 						const tempDir = os.tmpdir();
 						const testFilePath = path.join(tempDir, `probe_${Date.now()}.log`);
-						const largePayload = '0'.repeat(1024 * 512);
+						const largePayload = '0'.repeat(1024 * 256); // 256KB quick burst check
 
 						const dStart = performance.now();
 						await fs.writeFile(testFilePath, largePayload);
@@ -120,8 +145,16 @@ export const GET: RequestHandler = async () => {
 					type: 'disk',
 					data: { hasDiskAccess, diskType, writeLatencyMs: writeLatency }
 				});
+			} catch (e) {
+				sendChunk({
+					type: 'disk',
+					data: { hasDiskAccess: false, diskType: 'Completely Sandboxed', writeLatencyMs: -1 }
+				});
+				console.error('Disk analysis bypassed', e);
+			}
 
-				// 6. CLOCK GRANULARITY PROBE
+			// --- CHUNK 6: CLOCK GRANULARITY PROBE ---
+			try {
 				let lastTime = performance.now();
 				const measurements: number[] = [];
 				for (let i = 0; i < 500; i++) {
@@ -136,13 +169,21 @@ export const GET: RequestHandler = async () => {
 					type: 'clock',
 					data: {
 						minIncrementMs: minDetectedIncrement,
-						isCoarsened: minDetectedIncrement >= 0.1,
+						isCoarsened: minDetectedIncrement >= 0.1 || minDetectedIncrement === 0,
 						estimatedMitigationLevel:
-							minDetectedIncrement > 0.01 ? 'Aggressive Spectre Guard' : 'Low/None'
+							minDetectedIncrement === 0
+								? 'Absolute Edge Lockdown'
+								: minDetectedIncrement >= 0.1
+									? 'Aggressive Spectre Guard'
+									: 'Low/None'
 					}
 				});
+			} catch (e) {
+				console.error('Clock diagnostics failed', e);
+			}
 
-				// 7. WASM INTERPRETATION SANDBOX
+			// --- CHUNK 7: WASM INTERPRETATION SANDBOX ---
+			try {
 				let wasmCompiled = false;
 				let wasmCompileTime = -1;
 				if (typeof WebAssembly !== 'undefined') {
@@ -160,16 +201,20 @@ export const GET: RequestHandler = async () => {
 					type: 'wasm',
 					data: { allowed: wasmCompiled, compileDurationMs: wasmCompileTime }
 				});
+			} catch (e) {
+				console.error('WASM compilation probe failed', e);
+			}
 
-				// 8. MEMORY ALLOCATION CEILING
+			// --- CHUNK 8: MEMORY ALLOCATION CEILING ---
+			try {
 				let allocatedMegaBytes = 0;
 				if (typeof WebAssembly !== 'undefined') {
 					try {
-						const wasmMemory = new WebAssembly.Memory({ initial: 4096 });
+						const wasmMemory = new WebAssembly.Memory({ initial: 2048 }); // Probe 128MB initially to prevent process termination
 						allocatedMegaBytes = wasmMemory.buffer.byteLength / (1024 * 1024);
 					} catch {
 						try {
-							const smallWasmMemory = new WebAssembly.Memory({ initial: 512 });
+							const smallWasmMemory = new WebAssembly.Memory({ initial: 512 }); // 32MB fallback
 							allocatedMegaBytes = smallWasmMemory.buffer.byteLength / (1024 * 1024);
 						} catch {
 							allocatedMegaBytes = 0;
@@ -177,13 +222,17 @@ export const GET: RequestHandler = async () => {
 					}
 				}
 				sendChunk({ type: 'memory', data: { MaxSafeWasmAllocationMb: allocatedMegaBytes } });
+			} catch (e) {
+				console.error('Memory floor allocation failed', e);
+			}
 
-				// 9. OUTBOUND EGRESS CHECK
+			// --- CHUNK 9: OUTBOUND EGRESS CHECK ---
+			try {
 				let internetAccess = false;
 				let egressLatencyMs = -1;
 				try {
 					const netStart = performance.now();
-					await fetch('https://1.1.1.1', { method: 'HEAD', signal: AbortSignal.timeout(500) });
+					await fetch('https://1.1.1.1', { method: 'HEAD', signal: AbortSignal.timeout(400) });
 					internetAccess = true;
 					egressLatencyMs = performance.now() - netStart;
 				} catch {
@@ -193,8 +242,46 @@ export const GET: RequestHandler = async () => {
 					type: 'egress',
 					data: { outboundAccess: internetAccess, pingMs: egressLatencyMs }
 				});
+			} catch (e) {
+				console.error('Network egress test failed', e);
+			}
 
-				// 10. CONCURRENCY & TASK STARVATION
+			// --- CHUNK 10: SNOOPING & SURVEILLANCE ANALYSER ---
+			try {
+				const headers = request.headers;
+				const clientIp =
+					headers.get('x-forwarded-for') || headers.get('true-client-ip') || 'Direct Loopback';
+				const hasProxyHeaders =
+					headers.has('via') ||
+					headers.has('forwarded') ||
+					(headers.get('x-forwarded-for')?.split(',') ?? []).length > 1;
+
+				let baseAnonymity = 100;
+				if (hasProxyHeaders) baseAnonymity -= 30;
+				if (headers.has('sec-ch-ua')) baseAnonymity -= 10;
+
+				const hashInput = `${clientIp}-${headers.get('user-agent')}`;
+				let hash = 0;
+				for (let i = 0; i < hashInput.length; i++) {
+					hash = (hash << 5) - hash + hashInput.charCodeAt(i);
+					hash |= 0;
+				}
+
+				sendChunk({
+					type: 'surveillance',
+					data: {
+						clientIpHeaderLeaked: clientIp.split(',')[0].trim(),
+						proxyChainDetected: hasProxyHeaders,
+						requestFingerprintHash: `REQ-SIG-${Math.abs(hash).toString(16).toUpperCase()}`,
+						anonymityScore: baseAnonymity
+					}
+				});
+			} catch (e) {
+				console.error('Surveillance analytics failed', e);
+			}
+
+			// --- CHUNK 11: CONCURRENCY & TASK STARVATION ---
+			try {
 				const loopStart = performance.now();
 				let counter = 0;
 				while (performance.now() - loopStart < 20) {
@@ -212,12 +299,11 @@ export const GET: RequestHandler = async () => {
 						totalBurnDuration: loopEnd - loopStart
 					}
 				});
-			} catch (err: unknown) {
-				const errMsg = err instanceof Error ? err.message : 'Critical Stream Fracture';
-				sendChunk({ type: 'panic', data: { message: errMsg } });
-			} finally {
-				controller.close();
+			} catch (e) {
+				console.error('Concurrency exhaustion tracking failed', e);
 			}
+
+			controller.close();
 		}
 	});
 

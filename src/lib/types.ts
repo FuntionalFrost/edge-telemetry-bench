@@ -15,7 +15,7 @@ export interface IdentityChunk {
 export interface ClockChunk {
 	minIncrementMs: number;
 	isCoarsened: boolean;
-	estimatedMitigationLevel: 'Aggressive Spectre Guard' | 'Low/None';
+	estimatedMitigationLevel: 'Aggressive Spectre Guard' | 'Low/None' | 'Absolute Edge Lockdown';
 }
 
 export interface WasmChunk {
@@ -23,7 +23,6 @@ export interface WasmChunk {
 	compileDurationMs: number;
 }
 
-// Separated into distinct granular interfaces
 export interface MemoryChunk {
 	MaxSafeWasmAllocationMb: number;
 }
@@ -61,6 +60,14 @@ export interface EphemeralDiskChunk {
 	writeLatencyMs: number;
 }
 
+// --- NEW PRIVACY & SURVEILLANCE CONTRACT ---
+export interface SurveillanceChunk {
+	clientIpHeaderLeaked: string;
+	proxyChainDetected: boolean;
+	requestFingerprintHash: string;
+	anonymityScore: number;
+}
+
 export type DiagnosticStreamChunk =
 	| { type: 'identity'; data: IdentityChunk }
 	| { type: 'clock'; data: ClockChunk }
@@ -72,6 +79,7 @@ export type DiagnosticStreamChunk =
 	| { type: 'jit'; data: JitChunk }
 	| { type: 'entropy'; data: EntropyChunk }
 	| { type: 'disk'; data: EphemeralDiskChunk }
+	| { type: 'surveillance'; data: SurveillanceChunk }
 	| { type: 'panic'; data: { message: string } };
 
 export interface ClientHardwareMetrics {
@@ -80,4 +88,9 @@ export interface ClientHardwareMetrics {
 	memory: { heapLimitMb: number } | string;
 	webGPU: boolean;
 	userAgent: string;
+	fingerprint: {
+		canvasHash: string;
+		isFarblingDetected: boolean;
+		adBlockerActive: boolean;
+	};
 }
