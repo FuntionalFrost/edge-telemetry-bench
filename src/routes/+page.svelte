@@ -1,387 +1,377 @@
 <script lang="ts">
+	import { gatherClientMetrics } from '$lib/client/hardware';
 	import { onMount } from 'svelte';
-	// Import the exact contract definition
-	import type { TelemetryReport } from '$lib/types';
 
-	let loading = $state(true);
-	let error = $state<string | null>(null);
+	import type {
+		ClientHardwareMetrics,
+		ClockChunk,
+		ConcurrencyChunk,
+		DiagnosticStreamChunk,
+		IdentityChunk,
+		MemoryEgressChunk,
+		WasmChunk
+	} from '$lib/types';
 
-	// FIX: Explicitly type the state rune so the compiler expects the exact metadata keys
-	let report = $state<TelemetryReport | null>(null);
-	let networkLatencyMs = $state<number | null>(null);
+	let serverIdentity = $state<IdentityChunk | null>(null);
+	let clockTelemetry = $state<ClockChunk | null>(null);
+	let wasmTelemetry = $state<WasmChunk | null>(null);
+	let memoryTelemetry = $state<MemoryEgressChunk | null>(null);
+	let egressTelemetry = $state<MemoryEgressChunk | null>(null);
+	let concurrencyTelemetry = $state<ConcurrencyChunk | null>(null);
+	let clientTelemetry = $state<ClientHardwareMetrics | null>(null);
 
-	async function runSelfDiagnostics() {
-		loading = true;
-		error = null;
-		const timerStart = performance.now();
+	let streamActive = $state(false);
+	let streamHaltedUnexpectedly = $state(false);
+	let networkLatency = $state<number | null>(null);
+
+	async function streamDiagnostics() {
+		streamActive = true;
+		streamHaltedUnexpectedly = false;
+		const startTime = performance.now();
 
 		try {
-			const response = await fetch(`/api/diagnostics?cb=${Date.now()}`);
-			if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
+			const response = await fetch('/api/diagnostics');
+			if (!response.body) return;
+			networkLatency = Math.round(performance.now() - startTime);
 
-			// Type assertion on the incoming JSON payload stream
-			report = (await response.json()) as TelemetryReport;
-			networkLatencyMs = Math.round(performance.now() - timerStart);
-		} catch (err: unknown) {
-			error = (err as Error).message || 'Failed to initialize system telemetry query.';
+			const reader = response.body.getReader();
+			const decoder = new TextDecoder();
+			let buffer = '';
+
+			while (true) {
+				const { value, done } = await reader.read();
+				if (done) break;
+
+				buffer += decoder.decode(value, { stream: true });
+				const lines = buffer.split('\n');
+				buffer = lines.pop() || '';
+
+				for (const line of lines) {
+					if (!line.trim()) continue;
+					const chunk = JSON.parse(line) as DiagnosticStreamChunk;
+
+					switch (chunk.type) {
+						case 'identity':
+							serverIdentity = chunk.data;
+							break;
+						case 'clock':
+							clockTelemetry = chunk.data;
+							break;
+						case 'wasm':
+							wasmTelemetry = chunk.data;
+							break;
+						case 'memory':
+							memoryTelemetry = chunk.data;
+							break;
+						case 'egress':
+							egressTelemetry = chunk.data;
+							break;
+						case 'concurrency':
+							concurrencyTelemetry = chunk.data;
+							break;
+						case 'panic':
+							throw new Error(chunk.data.message);
+					}
+				}
+			}
+		} catch (e) {
+			console.error('Telemetry Interruption Matrix:', e);
+			streamHaltedUnexpectedly = true;
 		} finally {
-			loading = false;
+			streamActive = false;
 		}
 	}
 
-	onMount(() => {
-		runSelfDiagnostics();
+	onMount(async () => {
+		clientTelemetry = await gatherClientMetrics();
+		streamDiagnostics();
 	});
 </script>
 
-<main class="meta-dashboard {report?.nodeIdentity.provider || 'local'}">
-	<div class="glow-effect"></div>
-
-	<header class="hero-section">
-		<div class="badge">Active Infrastructure Node</div>
-		<h1>Self-Aware Telemetry Console</h1>
-		<p class="desc">A look inside the active serverless isolate container.</p>
+<main class="dashboard-root">
+	<header class="matrix-header">
+		<div class="status-pulse {streamActive ? 'active' : 'idle'}"></div>
+		<h1>ISOLATE INTERROGATOR // V8-CLIENT.MESH</h1>
+		<p class="subtitle">
+			Interrogating runtime configurations & architectural sandboxes via stream execution.
+		</p>
+		{#if networkLatency !== null}
+			<div class="network-tag">
+				Handshake Ingress RTT: <span class="text-cyan">{networkLatency}ms</span>
+			</div>
+		{/if}
 	</header>
 
-	{#if loading}
-		<div class="loader-container">
-			<div class="spinner"></div>
-			<p>Interrogating isolated V8 execution context...</p>
-		</div>
-	{:else if error}
-		<div class="error-panel">
-			<h2>System Fault Encountered</h2>
-			<p>{error}</p>
-			<button onclick={runSelfDiagnostics}>Re-probe Runtime</button>
-		</div>
-	{:else if report}
-		<div class="dashboard-grid">
-			<section class="metric-card node-id">
-				<h3>Host Node Blueprint</h3>
-				<div class="huge-display">{report.nodeIdentity.provider.toUpperCase()}</div>
-				<p class="engine-spec">{report.nodeIdentity.engine}</p>
-				<hr />
-				<div class="data-row">
-					<span>Deployment Ingress:</span>
-					<strong class="mono">{report.networkIngress.routingRayId}</strong>
+	<div class="grid-container">
+		<section class="card">
+			<h2>[01] SERVER ISOLATE ENVIRONMENT</h2>
+			{#if serverIdentity}
+				<div class="stat">
+					<span class="lbl">Uptime:</span>
+					<span class="val">{serverIdentity.uptimeMs.toFixed(1)} ms</span>
 				</div>
-				<div class="data-row">
-					<span>Ingress Country:</span> <strong>{report.networkIngress.ingressCountryCode}</strong>
+				<div class="stat">
+					<span class="lbl">Activations:</span>
+					<span class="val text-green">{serverIdentity.activations}</span>
 				</div>
-			</section>
+				<div class="stat">
+					<span class="lbl">Global Namespace Primitives:</span>
+					<span class="val">{serverIdentity.globalKeysCount} keys</span>
+				</div>
+			{:else}
+				<div class="shimmer">Awaiting stream connection...</div>
+			{/if}
+		</section>
 
-			<section class="metric-card isolate-lifecycle">
-				<h3>Isolate Container State</h3>
-				<div class="state-banner {report.isolateState.isColdStart ? 'cold' : 'warm'}">
-					{report.isolateState.isColdStart ? '🥶 COLD START BLOCK' : '🔥 WARM ISOLATE RESUSE'}
+		<section class="card">
+			<h2>[02] SIDE-CHANNEL CLOCK RESOLUTION</h2>
+			{#if clockTelemetry}
+				<div class="stat">
+					<span class="lbl">Timer Resolution:</span>
+					<span class="val">{clockTelemetry.minIncrementMs.toFixed(5)} ms</span>
 				</div>
-				<div class="data-row">
-					<span>Isolate Age:</span> <strong>{report.isolateState.isolateUptimeMs} ms</strong>
-				</div>
-				<div class="data-row">
-					<span>Requests Handled:</span>
-					<strong>{report.isolateState.activationCount} executions</strong>
-				</div>
-				<p class="explainer">
-					Refreshing this dashboard tracks whether your cloud provider routes requests to the same
-					long-lived V8 container or spins up a fresh instance.
-				</p>
-			</section>
-
-			<section class="metric-card micro-benchmarks">
-				<h3>Micro-Architectural Timing</h3>
-				<div class="large-metric">
-					<span>Event Loop Delay:</span>
-					<strong class="warn"
-						>{report.performanceTelemetry.eventLoopSchedulingLagMs.toFixed(3)} ms</strong
+				<div class="stat">
+					<span class="lbl">Spectre Mitigation Mask:</span>
+					<span class="val {clockTelemetry.isCoarsened ? 'warn' : 'clear'}"
+						>{clockTelemetry.estimatedMitigationLevel}</span
 					>
 				</div>
-				<div class="large-metric">
-					<span>Total Ingress Roundtrip:</span>
-					<strong class="success">{networkLatencyMs} ms</strong>
+			{:else}
+				<div class="shimmer">Probing timing pipelines...</div>
+			{/if}
+		</section>
+
+		<section class="card">
+			<h2>[03] WASM INTERPRETATION SANDBOX</h2>
+			{#if wasmTelemetry}
+				<div class="stat">
+					<span class="lbl">Dynamic Compilation:</span>
+					<span class="val status-tag" class:allowed={wasmTelemetry.allowed}
+						>{wasmTelemetry.allowed ? 'UNRESTRICTED' : 'BLOCKED'}</span
+					>
 				</div>
-				<div class="large-metric">
-					<span>Internal Execution Time:</span>
-					<strong>
-						{report.performanceTelemetry.internalComputeDurationMs === 0
-							? '🛡️ 0.00 ms (Coarsened Timer)'
-							: `${report.performanceTelemetry.internalComputeDurationMs.toFixed(3)} ms`}
-					</strong>
-				</div>
-				{#if report.nodeIdentity.provider === 'cloudflare' || report.nodeIdentity.provider === 'vercel'}
-					<p class="timer-note">
-						⚠️ Clock coarsened by host runtime engine to prevent Spectre timing attacks.
-					</p>
+				{#if wasmTelemetry.allowed}
+					<div class="stat">
+						<span class="lbl">JIT Compile Time:</span>
+						<span class="val">{wasmTelemetry.compileDurationMs.toFixed(3)} ms</span>
+					</div>
 				{/if}
-			</section>
+			{:else}
+				<div class="shimmer">Testing byte compilation execution restrictions...</div>
+			{/if}
+		</section>
 
-			<section class="metric-card global-inspection">
-				<h3>
-					Global Context Key Footprint ({report.environmentBlueprint.availableGlobalObjectsCount} keys)
-				</h3>
-				<p class="explainer">
-					First {report.environmentBlueprint.sampleGlobalKeys.length} system primitives exposed inside
-					this isolate container namespace:
-				</p>
-				<div class="key-tags">
-					{#each report.environmentBlueprint.sampleGlobalKeys as key (key)}
-						<span class="key-tag">{key}</span>
-					{/each}
+		<section class="card">
+			<h2>[04] BOUNDARY EXPLORATION & EGRESS</h2>
+			{#if memoryTelemetry}
+				<div class="stat">
+					<span class="lbl">Max Safe Linear Buffer Allocation:</span>
+					<span class="val highlight">{memoryTelemetry.MaxSafeWasmAllocationMb} MB</span>
 				</div>
-			</section>
-		</div>
+			{/if}
+			{#if egressTelemetry}
+				<div class="stat">
+					<span class="lbl">Outbound Internet Egress:</span>
+					<span class="val status-tag" class:allowed={egressTelemetry.outboundAccess}
+						>{egressTelemetry.outboundAccess ? 'OPEN' : 'FIREWALLED'}</span
+					>
+				</div>
+				{#if egressTelemetry.pingMs !== undefined && egressTelemetry.pingMs !== -1}
+					<div class="stat">
+						<span class="lbl">Egress Network Latency:</span>
+						<span class="val">{egressTelemetry.pingMs.toFixed(1)} ms</span>
+					</div>
+				{/if}
+			{:else}
+				<div class="shimmer">Measuring isolate boundary allowances...</div>
+			{/if}
+		</section>
 
-		<footer class="action-footer">
-			<button onclick={runSelfDiagnostics} class="probe-btn">Execute Fresh System Inspection</button
-			>
-		</footer>
+		<section class="card">
+			<h2>[05] MICROTASK CONCURRENCY MESH</h2>
+			{#if concurrencyTelemetry}
+				<div class="stat">
+					<span class="lbl">Event Loop Scheduling Lag:</span>
+					<span class="val text-green">{concurrencyTelemetry.eventLoopLagMs.toFixed(3)} ms</span>
+				</div>
+				<div class="stat">
+					<span class="lbl">Sync Burn Capacity (20ms):</span>
+					<span class="val highlight">{concurrencyTelemetry.syncBurnOps.toLocaleString()} ops</span>
+				</div>
+			{:else}
+				<div class="shimmer">Evaluating microtask starvation ceilings...</div>
+			{/if}
+		</section>
+
+		<section class="card client-card">
+			<h2>[06] CLIENT DEVICE CORRELATION</h2>
+			{#if clientTelemetry}
+				<div class="stat">
+					<span class="lbl">Logical Thread Pool:</span>
+					<span class="val">{clientTelemetry.cores} Cores</span>
+				</div>
+				<div class="stat">
+					<span class="lbl">Client GPU Canvas Core:</span>
+					<span class="val text-cyan">{clientTelemetry.gpu.renderer}</span>
+				</div>
+				<div class="stat">
+					<span class="lbl">WebGPU Support:</span>
+					<span class="val">{clientTelemetry.webGPU ? 'Available' : 'Unavailable'}</span>
+				</div>
+			{/if}
+		</section>
+	</div>
+
+	{#if streamHaltedUnexpectedly}
+		<div class="alert-banner">
+			⚠️ SERVERLESS STREAM TERMINATED: Container memory limit breached or CPU execution quota
+			forcibly killed by hypervisor.
+		</div>
 	{/if}
+
+	<footer class="terminal-footer">
+		<button onclick={streamDiagnostics} disabled={streamActive}>
+			{streamActive ? 'STRESSING PIPELINE...' : 'FORCE NEW INTERROGATION EXECUTION'}
+		</button>
+	</footer>
 </main>
 
 <style>
 	:global(body) {
-		margin: 0;
-		background-color: #0b0f19;
-		color: #f1f5f9;
-		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+		background: #070709;
+		color: #d1d5db;
+		font-family: monospace;
 	}
-
-	.meta-dashboard {
-		max-width: 1200px;
-		margin: 0 auto;
-		padding: 3rem 2rem;
-		position: relative;
-	}
-
-	.hero-section {
-		text-align: center;
-		margin-bottom: 4rem;
-	}
-	h1 {
-		font-size: 2.5rem;
-		margin: 0.5rem 0;
-		font-weight: 800;
-		letter-spacing: -0.05em;
-		color: #ffffff;
-	}
-	.desc {
-		color: #94a3b8;
-		font-size: 1.1rem;
-		margin: 0;
-	}
-
-	.badge {
-		display: inline-block;
-		padding: 0.25rem 0.75rem;
-		border-radius: 9999px;
-		font-size: 0.75rem;
-		font-weight: 700;
-		background: rgba(255, 255, 255, 0.08);
-		border: 1px solid rgba(255, 255, 255, 0.15);
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
-	}
-
-	.dashboard-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-		gap: 2rem;
-	}
-
-	.metric-card {
-		background: #111827;
-		border: 1px solid #1f2937;
-		border-radius: 0.5rem;
+	.dashboard-root {
 		padding: 2rem;
+		max-width: 1400px;
+		margin: 0 auto;
+	}
+	.matrix-header {
+		border-bottom: 1px solid #1f2937;
+		padding-bottom: 1.5rem;
+		margin-bottom: 2rem;
 		position: relative;
-		overflow: hidden;
 	}
-
-	.version-pill {
+	.network-tag {
+		position: absolute;
+		right: 0;
+		bottom: 1.5rem;
+		font-size: 0.85rem;
+		color: #6b7280;
+	}
+	.status-pulse {
 		display: inline-block;
-		font-size: 0.8rem;
-		background: #030712;
-		color: #94a3b8;
-		padding: 0.2rem 0.6rem;
-		border-radius: 0.25rem;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		margin-right: 10px;
+	}
+	.status-pulse.active {
+		background: #10b981;
+		box-shadow: 0 0 10px #10b981;
+	}
+	.status-pulse.idle {
+		background: #ef4444;
+	}
+	.grid-container {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		gap: 1.5rem;
+	}
+	.card {
+		background: #0f1115;
 		border: 1px solid #1f2937;
-		margin-bottom: 0.75rem;
+		padding: 1.5rem;
+		border-radius: 4px;
 	}
-
-	h3 {
-		margin-top: 0;
+	.client-card {
+		border-color: #06b6d4;
+	}
+	h2 {
 		font-size: 0.9rem;
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
-		color: #64748b;
-	}
-
-	.huge-display {
-		font-size: 3rem;
-		font-weight: 900;
-		letter-spacing: -0.02em;
-		line-height: 1;
-		margin: 1rem 0 0.5rem 0;
-	}
-	.engine-spec {
-		margin: 0 0 1.5rem 0;
-		color: #94a3b8;
-		font-size: 0.9rem;
-	}
-	hr {
-		border: 0;
-		border-top: 1px solid #1f2937;
-		margin: 1.5rem 0;
-	}
-
-	.data-row {
-		display: flex;
-		justify-content: space-between;
-		margin-bottom: 0.6rem;
-		font-size: 0.9rem;
-	}
-	.data-row span {
-		color: #64748b;
-	}
-	.mono {
-		font-size: 0.8rem;
-		background: #030712;
-		padding: 0.1rem 0.4rem;
-		border-radius: 0.25rem;
-	}
-
-	.state-banner {
-		text-align: center;
-		padding: 0.75rem;
-		border-radius: 0.375rem;
-		font-weight: 700;
-		font-size: 1rem;
-		margin-bottom: 1.5rem;
+		color: #9ca3af;
 		letter-spacing: 0.05em;
-	}
-	.state-banner.cold {
-		background: rgba(14, 165, 233, 0.15);
-		color: #38bdf8;
-		border: 1px solid rgba(14, 165, 233, 0.3);
-	}
-	.state-banner.warm {
-		background: rgba(245, 158, 11, 0.15);
-		color: #fbbf24;
-		border: 1px solid rgba(245, 158, 11, 0.3);
-	}
-
-	.large-metric {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		background: #030712;
-		padding: 1rem;
-		border-radius: 0.375rem;
 		margin-bottom: 1rem;
 	}
-	.large-metric span {
-		color: #94a3b8;
-		font-size: 0.9rem;
-	}
-	.large-metric strong {
-		font-size: 1.2rem;
-	}
-
-	.explainer {
-		font-size: 0.85rem;
-		color: #64748b;
-		line-height: 1.5;
-		margin: 1rem 0 0 0;
-	}
-
-	.key-tags {
+	.stat {
 		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem;
-		margin-top: 1rem;
+		justify-content: space-between;
+		margin-bottom: 0.5rem;
+		font-size: 0.95rem;
 	}
-	.key-tag {
-		font-size: 0.75rem;
-		background: #1f2937;
-		padding: 0.2rem 0.5rem;
-		border-radius: 0.25rem;
-		color: #cbd5e1;
-		border: 1px solid #374151;
+	.lbl {
+		color: #6b7280;
 	}
-
-	.action-footer {
-		text-align: center;
-		margin-top: 4rem;
+	.val {
+		font-weight: bold;
 	}
-	.probe-btn {
-		background: #ffffff;
-		color: #000000;
-		border: none;
-		padding: 1rem 2rem;
-		font-family: inherit;
-		font-weight: 700;
-		border-radius: 0.25rem;
-		cursor: pointer;
-		transition: opacity 0.2s;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-	}
-	.probe-btn:hover {
-		opacity: 0.9;
-	}
-
-	/* VENDOR SPECIFIC DESIGN MODIFICATIONS */
-	.cloudflare .huge-display {
-		color: #f97316;
-	}
-	.cloudflare .badge {
-		color: #f97316;
-		border-color: rgba(249, 115, 22, 0.3);
-		background: rgba(249, 115, 22, 0.05);
-	}
-
-	.vercel .huge-display {
-		color: #ffffff;
-	}
-	.vercel .badge {
-		color: #ffffff;
-		border-color: rgba(255, 255, 255, 0.3);
-	}
-
-	.netlify .huge-display {
-		color: #2dd4bf;
-	}
-	.netlify .badge {
-		color: #2dd4bf;
-		border-color: rgba(45, 212, 191, 0.3);
-		background: rgba(45, 212, 191, 0.05);
-	}
-
-	/* STATE ANIMATIONS */
-	.loader-container {
-		text-align: center;
-		padding: 5rem 0;
-		color: #94a3b8;
-	}
-	.spinner {
-		width: 40px;
-		height: 40px;
-		border: 3px solid #1f2937;
-		border-top-color: #ffffff;
-		border-radius: 50%;
-		margin: 0 auto 1.5rem auto;
-		animation: spin 1s linear infinite;
-	}
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
-	.success {
+	.text-green {
 		color: #10b981;
 	}
+	.text-cyan {
+		color: #06b6d4;
+	}
+	.clear {
+		color: #34d399;
+	}
+	.status-tag {
+		padding: 2px 6px;
+		border-radius: 3px;
+		font-size: 0.8rem;
+		background: #374151;
+	}
+	.status-tag.allowed {
+		background: #065f46;
+		color: #34d399;
+	}
 	.warn {
-		color: #ef4444;
+		color: #f59e0b;
+	}
+	.highlight {
+		color: #a855f7;
+	}
+	.shimmer {
+		color: #4b5563;
+		font-style: italic;
+		animation: pulse 1.5s infinite;
+	}
+	.alert-banner {
+		background: #7f1d1d;
+		border: 1px solid #ef4444;
+		color: #fca5a5;
+		padding: 1rem;
+		border-radius: 4px;
+		margin-top: 2rem;
+	}
+	.terminal-footer {
+		margin-top: 2rem;
+		border-top: 1px solid #1f2937;
+		padding-top: 1.5rem;
+	}
+	button {
+		background: #111827;
+		border: 1px solid #374151;
+		color: #e5e7eb;
+		padding: 0.75rem 1.5rem;
+		cursor: pointer;
+		font-family: monospace;
+	}
+	button:hover:not(:disabled) {
+		background: #1f2937;
+		border-color: #4b5563;
+	}
+	button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+	@keyframes pulse {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.5;
+		}
 	}
 </style>

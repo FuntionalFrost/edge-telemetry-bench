@@ -6,19 +6,8 @@ declare global {
 		// interface Locals {}
 		// interface PageData {}
 		// interface PageState {}
-		interface Platform {
-			// Cloudflare specific execution context and bindings
-			env?: Record<string, unknown>;
-			context?: {
-				waitUntil(promise: Promise<unknown>): void;
-				passThroughOnException(): void;
-			};
-			caches?: CacheStorage;
-		}
+		// interface Platform {}
+
+		export {};
 	}
-
-	// Declare Deno namespace for Netlify Edge runtime static analysis
-	const Deno: unknown;
 }
-
-export {};
