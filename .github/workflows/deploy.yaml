@@ -78,7 +78,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           pnpm build:cloudflare
-          pnx wrangler deploy .svelte-kit/cloudflare --project-name=edge-telemetry-grid --branch=main
+          pnpm wrangler deploy .svelte-kit/cloudflare
 
       # ---------------------------------------------------
       # TARGET MATRIX SLICE: VERCEL EDGE
