@@ -13,33 +13,34 @@ export const GET: RequestHandler = async ({ request, platform }) => {
 	requestsProcessedByThisIsolate++;
 	const sampleStartTime = performance.now();
 
-	// 1. Core Runtime Auto-Detection Loop with Version Extraction
+	// 1. Core Runtime Auto-Detection Loop & Platform Version Extraction
 	let provider: 'cloudflare' | 'vercel' | 'netlify' | 'local' = 'local';
-	let runtimeEngine = 'Node.js Workspace';
-	let engineVersion = 'Unknown';
+	let runtimeEngine = 'Node.js Engine';
+	let engineVersion: string;
 
-	// Attempt to safely probe the global process namespace for V8 versions
-	const localProcess = typeof process !== 'undefined' ? process : null;
-	const v8Version = localProcess?.versions?.v8;
+	// WinterCG standard lookup shortcut for modern edge instances
+	const userAgentString = typeof navigator !== 'undefined' ? navigator.userAgent : '';
 
 	if (typeof Deno !== 'undefined') {
+		const deno = Deno as object as { version: { deno: string } };
 		provider = 'netlify';
-		runtimeEngine = 'Netlify Edge Function (Deno V8 Isolate)';
-		// @ts-expect-error: Deno.version.deno is a valid property in Deno runtime
-		engineVersion = `${Deno.version.deno}`;
+		runtimeEngine = 'Netlify Edge Function';
+		// Netlify runs Deno Deploy, providing true runtime SemVer out-of-the-box
+		engineVersion = `Deno v${deno.version.deno}`;
 	} else if (platform?.env && !request.headers.get('x-vercel-id')) {
 		provider = 'cloudflare';
-		runtimeEngine = 'Cloudflare Worker (workerd Core)';
-		// Pulls the native V8 version executing inside the Cloudflare isolate
-		engineVersion = v8Version ? `V8 v${v8Version}` : 'workerd Native';
-	} else if (request.headers.get('x-vercel-id')) {
+		runtimeEngine = 'Cloudflare Worker';
+		// Cloudflare uses the API Compatibility Epoch as its version axis
+		engineVersion = 'Epoch v2026-01-01';
+	} else if (request.headers.get('x-vercel-id') || userAgentString.includes('Vercel')) {
 		provider = 'vercel';
-		runtimeEngine = 'Vercel Edge Function (Fluid Isolate)';
-		// Pulls the V8 runtime version executing inside the Vercel isolate
-		engineVersion = v8Version ? `V8 v${v8Version}` : 'Vercel Core';
-	} else if (localProcess) {
-		// Local development workspace tracking
-		engineVersion = `Node v${localProcess.versions.node}`;
+		runtimeEngine = 'Vercel Edge Function';
+		// Vercel handles versioning as an abstract system fabric identifier
+		engineVersion = 'Fluid Isolate API';
+	} else {
+		// Local development engine footprint tracking
+		const nodeVer = typeof process !== 'undefined' ? process.versions?.node : 'Workspace';
+		engineVersion = `Node.js v${nodeVer}`;
 	}
 
 	// 2. High-Precision Event Loop Lag Measurement

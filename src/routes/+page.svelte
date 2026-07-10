@@ -59,7 +59,9 @@
 			<section class="metric-card node-id">
 				<h3>Host Node Blueprint</h3>
 				<div class="huge-display">{report.nodeIdentity.provider.toUpperCase()}</div>
-				<div class="version-pill">Build Scope: {report.nodeIdentity.engineVersion}</div>
+
+				<div class="version-pill">Runtime: {report.nodeIdentity.engineVersion}</div>
+
 				<p class="engine-spec">{report.nodeIdentity.engine}</p>
 				<hr />
 				<div class="data-row">
