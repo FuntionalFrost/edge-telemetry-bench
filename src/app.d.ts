@@ -8,17 +8,17 @@ declare global {
 		// interface PageState {}
 		interface Platform {
 			// Cloudflare specific execution context and bindings
-			env?: Record<string, any>;
+			env?: Record<string, unknown>;
 			context?: {
-				waitUntil(promise: Promise<any>): void;
+				waitUntil(promise: Promise<unknown>): void;
 				passThroughOnException(): void;
 			};
-			caches?: any;
+			caches?: CacheStorage;
 		}
 	}
 
 	// Declare Deno namespace for Netlify Edge runtime static analysis
-	const Deno: any;
+	const Deno: unknown;
 }
 
 export {};
