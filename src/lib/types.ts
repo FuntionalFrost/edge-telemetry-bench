@@ -2,6 +2,7 @@ export interface TelemetryReport {
 	nodeIdentity: {
 		provider: 'cloudflare' | 'vercel' | 'netlify' | 'local';
 		engine: string;
+		engineVersion: string;
 		timestamp: string;
 	};
 	isolateState: {

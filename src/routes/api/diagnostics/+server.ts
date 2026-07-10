@@ -13,25 +13,33 @@ export const GET: RequestHandler = async ({ request, platform }) => {
 	requestsProcessedByThisIsolate++;
 	const sampleStartTime = performance.now();
 
-	// 1. Core Runtime Auto-Detection Loop
+	// 1. Core Runtime Auto-Detection Loop with Version Extraction
 	let provider: 'cloudflare' | 'vercel' | 'netlify' | 'local' = 'local';
-	let runtimeEngine = 'Node.js Engine (Development Workspace)';
+	let runtimeEngine = 'Node.js Workspace';
+	let engineVersion = 'Unknown';
+
+	// Attempt to safely probe the global process namespace for V8 versions
+	const localProcess = typeof process !== 'undefined' ? process : null;
+	const v8Version = localProcess?.versions?.v8;
 
 	if (typeof Deno !== 'undefined') {
 		provider = 'netlify';
-		// PROOF: Accessing Deno version info directly from the Netlify Edge engine
-		// @ts-expect-error - Instruct TS to allow checking Netlify's injected runtime primitive
-		runtimeEngine = `Netlify Edge (Deno v${Deno.version.deno})`;
+		runtimeEngine = 'Netlify Edge Function (Deno V8 Isolate)';
+		// @ts-expect-error: Deno.version.deno is a valid property in Deno runtime
+		engineVersion = `${Deno.version.deno}`;
 	} else if (platform?.env && !request.headers.get('x-vercel-id')) {
 		provider = 'cloudflare';
-		runtimeEngine = 'Cloudflare workerd (Native V8 Isolate)';
-	}
-	// @ts-expect-error - Instruct TS to allow checking Vercel's injected runtime primitive
-	else if (globalThis.EdgeRuntime === 'vercel-edge' || request.headers.get('x-vercel-id')) {
+		runtimeEngine = 'Cloudflare Worker (workerd Core)';
+		// Pulls the native V8 version executing inside the Cloudflare isolate
+		engineVersion = v8Version ? `V8 v${v8Version}` : 'workerd Native';
+	} else if (request.headers.get('x-vercel-id')) {
 		provider = 'vercel';
-		// PROOF: Verifying the proprietary global string injected by Vercel
-		// @ts-expect-error - Instruct TS to allow checking Vercel's injected runtime primitive
-		runtimeEngine = `Vercel Edge Runtime (${globalThis.EdgeRuntime || 'Fluid Isolate'})`;
+		runtimeEngine = 'Vercel Edge Function (Fluid Isolate)';
+		// Pulls the V8 runtime version executing inside the Vercel isolate
+		engineVersion = v8Version ? `V8 v${v8Version}` : 'Vercel Core';
+	} else if (localProcess) {
+		// Local development workspace tracking
+		engineVersion = `Node v${localProcess.versions.node}`;
 	}
 
 	// 2. High-Precision Event Loop Lag Measurement
@@ -54,6 +62,7 @@ export const GET: RequestHandler = async ({ request, platform }) => {
 		nodeIdentity: {
 			provider,
 			engine: runtimeEngine,
+			engineVersion,
 			timestamp: new Date().toISOString()
 		},
 		isolateState: {

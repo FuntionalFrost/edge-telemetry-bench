@@ -59,6 +59,7 @@
 			<section class="metric-card node-id">
 				<h3>Host Node Blueprint</h3>
 				<div class="huge-display">{report.nodeIdentity.provider.toUpperCase()}</div>
+				<div class="version-pill">Build Scope: {report.nodeIdentity.engineVersion}</div>
 				<p class="engine-spec">{report.nodeIdentity.engine}</p>
 				<hr />
 				<div class="data-row">
@@ -195,6 +196,17 @@
 		padding: 2rem;
 		position: relative;
 		overflow: hidden;
+	}
+
+	.version-pill {
+		display: inline-block;
+		font-size: 0.8rem;
+		background: #030712;
+		color: #94a3b8;
+		padding: 0.2rem 0.6rem;
+		border-radius: 0.25rem;
+		border: 1px solid #1f2937;
+		margin-bottom: 0.75rem;
 	}
 
 	h3 {
