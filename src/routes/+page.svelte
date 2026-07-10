@@ -45,8 +45,12 @@
 
 			target.clientLatencyMs = Math.round(performance.now() - startTime);
 			target.data = payload;
-		} catch (err: any) {
-			target.error = err.message || 'Failed to capture telemetry payload.';
+		} catch (error: unknown) {
+			if (error instanceof Error) {
+				target.error = error.message;
+			} else {
+				target.error = 'An unknown error occurred.';
+			}
 			target.data = null;
 		} finally {
 			target.loading = false;
