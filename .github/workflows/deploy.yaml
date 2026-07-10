@@ -78,7 +78,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           pnpm build:cloudflare
-          pnpm wrangler deploy .svelte-kit/cloudflare
+          pnpm wrangler deploy
 
       # ---------------------------------------------------
       # TARGET MATRIX SLICE: VERCEL EDGE
