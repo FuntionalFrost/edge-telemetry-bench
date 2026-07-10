@@ -1,30 +1,24 @@
 export interface TelemetryReport {
-	meta: {
+	nodeIdentity: {
+		provider: 'cloudflare' | 'vercel' | 'netlify' | 'local';
+		engine: string;
 		timestamp: string;
-		provider: 'cloudflare' | 'vercel' | 'netlify' | 'unknown';
-		executionEngine: string;
 	};
-	isolateMetrics: {
+	isolateState: {
 		isColdStart: boolean;
-		isolateAgeMs: number;
-		requestsServedByThisIsolateCount: number;
+		isolateUptimeMs: number;
+		activationCount: number;
 	};
-	networking: {
-		edgeDatacenterRay: string;
-		inferredClientCountry: string;
-		totalRoundtripProcessingTimeMs: number;
+	performanceTelemetry: {
+		eventLoopSchedulingLagMs: number;
+		internalComputeDurationMs: number;
 	};
-	computePerformance: {
-		stressLoopExecutionTimeMs: number;
-		checksumVerification: number;
+	networkIngress: {
+		routingRayId: string;
+		ingressCountryCode: string;
 	};
-}
-
-export interface PlatformState {
-	name: string;
-	url: string;
-	data: TelemetryReport | null;
-	loading: boolean;
-	error: string | null;
-	clientLatencyMs: number | null;
+	environmentBlueprint: {
+		availableGlobalObjectsCount: number;
+		sampleGlobalKeys: string[];
+	};
 }
