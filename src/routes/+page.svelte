@@ -6,18 +6,27 @@
 		ClientHardwareMetrics,
 		ClockChunk,
 		ConcurrencyChunk,
+		ContextLeakChunk,
 		DiagnosticStreamChunk,
+		EgressChunk,
+		EntropyChunk,
+		EphemeralDiskChunk,
 		IdentityChunk,
-		MemoryEgressChunk,
+		JitChunk,
+		MemoryChunk,
 		WasmChunk
 	} from '$lib/types';
 
 	let serverIdentity = $state<IdentityChunk | null>(null);
 	let clockTelemetry = $state<ClockChunk | null>(null);
 	let wasmTelemetry = $state<WasmChunk | null>(null);
-	let memoryTelemetry = $state<MemoryEgressChunk | null>(null);
-	let egressTelemetry = $state<MemoryEgressChunk | null>(null);
+	let memoryTelemetry = $state<MemoryChunk | null>(null);
+	let egressTelemetry = $state<EgressChunk | null>(null);
 	let concurrencyTelemetry = $state<ConcurrencyChunk | null>(null);
+	let contextLeakTelemetry = $state<ContextLeakChunk | null>(null);
+	let jitTelemetry = $state<JitChunk | null>(null);
+	let entropyTelemetry = $state<EntropyChunk | null>(null);
+	let diskTelemetry = $state<EphemeralDiskChunk | null>(null);
 	let clientTelemetry = $state<ClientHardwareMetrics | null>(null);
 
 	let streamActive = $state(false);
@@ -68,6 +77,18 @@
 							break;
 						case 'concurrency':
 							concurrencyTelemetry = chunk.data;
+							break;
+						case 'contextLeak':
+							contextLeakTelemetry = chunk.data;
+							break;
+						case 'jit':
+							jitTelemetry = chunk.data;
+							break;
+						case 'entropy':
+							entropyTelemetry = chunk.data;
+							break;
+						case 'disk':
+							diskTelemetry = chunk.data;
 							break;
 						case 'panic':
 							throw new Error(chunk.data.message);
@@ -176,7 +197,7 @@
 						>{egressTelemetry.outboundAccess ? 'OPEN' : 'FIREWALLED'}</span
 					>
 				</div>
-				{#if egressTelemetry.pingMs !== undefined && egressTelemetry.pingMs !== -1}
+				{#if egressTelemetry.pingMs !== -1}
 					<div class="stat">
 						<span class="lbl">Egress Network Latency:</span>
 						<span class="val">{egressTelemetry.pingMs.toFixed(1)} ms</span>
@@ -203,8 +224,88 @@
 			{/if}
 		</section>
 
+		<section class="card border-anim">
+			<h2>[06] STATE POLLUTION / MULTI-TENANCY</h2>
+			{#if contextLeakTelemetry}
+				<div class="stat">
+					<span class="lbl">Isolate Memory Bleed:</span>
+					<span class="val status-tag {contextLeakTelemetry.contextIsPolluted ? 'warn' : 'clear'}">
+						{contextLeakTelemetry.contextIsPolluted ? 'DIRTY HEAP CACHE' : 'PURE ISOLATE'}
+					</span>
+				</div>
+				<div class="stat">
+					<span class="lbl">Current Node Tag:</span>
+					<span class="val text-cyan">{contextLeakTelemetry.currentAssignedMarker}</span>
+				</div>
+			{:else}
+				<div class="shimmer">Evaluating context security maps...</div>
+			{/if}
+		</section>
+
+		<section class="card">
+			<h2>[07] ENGINE JIT PRIVILEGES</h2>
+			{#if jitTelemetry}
+				<div class="stat">
+					<span class="lbl">Runtime Evaluation:</span>
+					<span class="val status-tag" class:allowed={jitTelemetry.dynamicEvalAllowed}>
+						{jitTelemetry.dynamicEvalAllowed ? 'ALLOWED' : 'BLOCKED'}
+					</span>
+				</div>
+				{#if jitTelemetry.dynamicEvalAllowed}
+					<div class="stat">
+						<span class="lbl">Eval Eval Time:</span>
+						<span class="val">{jitTelemetry.evalDurationMs.toFixed(3)} ms</span>
+					</div>
+				{/if}
+			{:else}
+				<div class="shimmer">Testing engine compilation policies...</div>
+			{/if}
+		</section>
+
+		<section class="card">
+			<h2>[08] ENTROPY HARVESTING SPEED</h2>
+			{#if entropyTelemetry}
+				<div class="stat">
+					<span class="lbl">Entropy Yield Speed:</span>
+					<span class="val highlight"
+						>{entropyTelemetry.entropyGenerationRateMbSec.toFixed(2)} MB/s</span
+					>
+				</div>
+				<div class="stat">
+					<span class="lbl">Harvest Ingress Lag:</span>
+					<span class="val">{entropyTelemetry.durationMs.toFixed(2)} ms</span>
+				</div>
+			{:else}
+				<div class="shimmer">Sourcing entropy seed rate...</div>
+			{/if}
+		</section>
+
+		<section class="card">
+			<h2>[09] EPHEMERAL DISK SUBSYSTEM</h2>
+			{#if diskTelemetry}
+				<div class="stat">
+					<span class="lbl">File System Layer:</span>
+					<span class="val status-tag" class:allowed={diskTelemetry.hasDiskAccess}>
+						{diskTelemetry.hasDiskAccess ? 'ACCESSIBLE' : 'SANDBOX LOCKOUT'}
+					</span>
+				</div>
+				{#if diskTelemetry.hasDiskAccess}
+					<div class="stat">
+						<span class="lbl">Inferred Driver Base:</span>
+						<span class="val text-cyan">{diskTelemetry.diskType}</span>
+					</div>
+					<div class="stat">
+						<span class="lbl">512KB Write-Thru Latency:</span>
+						<span class="val">{diskTelemetry.writeLatencyMs.toFixed(2)} ms</span>
+					</div>
+				{/if}
+			{:else}
+				<div class="shimmer">Interrogating disk storage vectors...</div>
+			{/if}
+		</section>
+
 		<section class="card client-card">
-			<h2>[06] CLIENT DEVICE CORRELATION</h2>
+			<h2>[10] CLIENT DEVICE CORRELATION</h2>
 			{#if clientTelemetry}
 				<div class="stat">
 					<span class="lbl">Logical Thread Pool:</span>
@@ -218,6 +319,8 @@
 					<span class="lbl">WebGPU Support:</span>
 					<span class="val">{clientTelemetry.webGPU ? 'Available' : 'Unavailable'}</span>
 				</div>
+			{:else}
+				<div class="shimmer">Gathering local device profiles...</div>
 			{/if}
 		</section>
 	</div>

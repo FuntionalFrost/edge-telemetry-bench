@@ -1,4 +1,3 @@
-// Individual Stream Chunk Payloads
 export interface IdentityChunk {
 	spawnTime: number;
 	uptimeMs: number;
@@ -24,10 +23,14 @@ export interface WasmChunk {
 	compileDurationMs: number;
 }
 
-export interface MemoryEgressChunk {
+// Separated into distinct granular interfaces
+export interface MemoryChunk {
 	MaxSafeWasmAllocationMb: number;
-	outboundAccess?: boolean;
-	pingMs?: number;
+}
+
+export interface EgressChunk {
+	outboundAccess: boolean;
+	pingMs: number;
 }
 
 export interface ConcurrencyChunk {
@@ -36,23 +39,44 @@ export interface ConcurrencyChunk {
 	totalBurnDuration: number;
 }
 
-// Discriminated Union for Server Stream Processing
+export interface ContextLeakChunk {
+	contextIsPolluted: boolean;
+	previousMarkerDetected: string | null;
+	currentAssignedMarker: string;
+}
+
+export interface JitChunk {
+	dynamicEvalAllowed: boolean;
+	evalDurationMs: number;
+}
+
+export interface EntropyChunk {
+	entropyGenerationRateMbSec: number;
+	durationMs: number;
+}
+
+export interface EphemeralDiskChunk {
+	hasDiskAccess: boolean;
+	diskType: 'Persistent/Ephemeral Physical' | 'In-Memory Tmpfs' | 'Completely Sandboxed';
+	writeLatencyMs: number;
+}
+
 export type DiagnosticStreamChunk =
 	| { type: 'identity'; data: IdentityChunk }
 	| { type: 'clock'; data: ClockChunk }
 	| { type: 'wasm'; data: WasmChunk }
-	| { type: 'memory'; data: MemoryEgressChunk }
-	| { type: 'egress'; data: MemoryEgressChunk }
+	| { type: 'memory'; data: MemoryChunk }
+	| { type: 'egress'; data: EgressChunk }
 	| { type: 'concurrency'; data: ConcurrencyChunk }
+	| { type: 'contextLeak'; data: ContextLeakChunk }
+	| { type: 'jit'; data: JitChunk }
+	| { type: 'entropy'; data: EntropyChunk }
+	| { type: 'disk'; data: EphemeralDiskChunk }
 	| { type: 'panic'; data: { message: string } };
 
-// Client Hardware Profile
 export interface ClientHardwareMetrics {
 	cores: number | 'Unknown';
-	gpu: {
-		vendor: string;
-		renderer: string;
-	};
+	gpu: { vendor: string; renderer: string };
 	memory: { heapLimitMb: number } | string;
 	webGPU: boolean;
 	userAgent: string;

@@ -4,22 +4,19 @@ import type { RequestHandler } from '@sveltejs/kit';
 const isolateSpawnTime = performance.now();
 let globalActivationCount = 0;
 
-export const GET: RequestHandler = async ({ request }) => {
+// Removed `{ request }` destructuring since it isn't consumed by our raw global probes
+export const GET: RequestHandler = async () => {
 	globalActivationCount++;
 	const encoder = new TextEncoder();
 
 	const stream = new ReadableStream({
 		async start(controller) {
-			// Avoid 'any' by using our strict Discriminated Union type schema
 			const sendChunk = (chunk: DiagnosticStreamChunk) => {
 				controller.enqueue(encoder.encode(JSON.stringify(chunk) + '\n'));
 			};
 
 			try {
-				// eslint-disable-next-line @typescript-eslint/no-unused-vars
-				const reqHeaders = request.headers;
-
-				// 1. Environmental Self-Awareness
+				// 1. IDENTITY & STATE
 				sendChunk({
 					type: 'identity',
 					data: {
@@ -29,7 +26,6 @@ export const GET: RequestHandler = async ({ request }) => {
 						globalKeysCount: Object.getOwnPropertyNames(globalThis).length,
 						runtimeGlobals: {
 							hasProcess: typeof process !== 'undefined',
-							// Use 'in globalThis' to keep compiler happy in environments where these don't exist
 							hasDeno: 'Deno' in globalThis,
 							hasBun: 'Bun' in globalThis,
 							hasWebAssembly: typeof WebAssembly !== 'undefined',
@@ -38,7 +34,94 @@ export const GET: RequestHandler = async ({ request }) => {
 					}
 				});
 
-				// 2. Spectre Mitigation Prober
+				// 2. CONTEXT POLLUTION (THE LEAK TEST)
+				const targetGlobal = globalThis as unknown as { __INTERROGATION_MARKER?: string };
+				const detectedMarker = targetGlobal.__INTERROGATION_MARKER || null;
+				const isPolluted = detectedMarker !== null;
+
+				const newMarker = `node_token_0x${Math.random().toString(16).slice(2, 10)}`;
+				targetGlobal.__INTERROGATION_MARKER = newMarker;
+
+				sendChunk({
+					type: 'contextLeak',
+					data: {
+						contextIsPolluted: isPolluted,
+						previousMarkerDetected: detectedMarker,
+						currentAssignedMarker: newMarker
+					}
+				});
+
+				// 3. JIT & COMPILATION EVALUATION LOCK
+				let evalAllowed = false;
+				let evalTime = -1;
+				try {
+					const evalStart = performance.now();
+					const dynamicFunc = new Function('a', 'b', 'return a * b') as (
+						a: number,
+						b: number
+					) => number;
+					if (dynamicFunc(6, 7) === 42) {
+						evalAllowed = true;
+						evalTime = performance.now() - evalStart;
+					}
+				} catch {
+					evalAllowed = false;
+				}
+				sendChunk({
+					type: 'jit',
+					data: { dynamicEvalAllowed: evalAllowed, evalDurationMs: evalTime }
+				});
+
+				// 4. HYPERVISOR ENTROPY BENCHMARK
+				const entropyStart = performance.now();
+				const entropyBuffer = new Uint8Array(1024 * 1024);
+				if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+					crypto.getRandomValues(entropyBuffer);
+				}
+				const entropyDuration = performance.now() - entropyStart;
+				const rate = 1 / (entropyDuration / 1000);
+
+				sendChunk({
+					type: 'entropy',
+					data: {
+						entropyGenerationRateMbSec: isFinite(rate) ? rate : 0,
+						durationMs: entropyDuration
+					}
+				});
+
+				// 5. EPHEMERAL DISK WRITE-THRU PERFORMANCE
+				let hasDiskAccess = false;
+				let diskType: 'Persistent/Ephemeral Physical' | 'In-Memory Tmpfs' | 'Completely Sandboxed' =
+					'Completely Sandboxed';
+				let writeLatency = -1;
+
+				if (typeof process !== 'undefined' && process.versions?.node) {
+					try {
+						const fs = await import('fs/promises');
+						const path = await import('path');
+						const os = await import('os');
+
+						const tempDir = os.tmpdir();
+						const testFilePath = path.join(tempDir, `probe_${Date.now()}.log`);
+						const largePayload = '0'.repeat(1024 * 512);
+
+						const dStart = performance.now();
+						await fs.writeFile(testFilePath, largePayload);
+						await fs.unlink(testFilePath);
+						writeLatency = performance.now() - dStart;
+						hasDiskAccess = true;
+						diskType = writeLatency < 0.8 ? 'In-Memory Tmpfs' : 'Persistent/Ephemeral Physical';
+					} catch {
+						hasDiskAccess = false;
+					}
+				}
+
+				sendChunk({
+					type: 'disk',
+					data: { hasDiskAccess, diskType, writeLatencyMs: writeLatency }
+				});
+
+				// 6. CLOCK GRANULARITY PROBE
 				let lastTime = performance.now();
 				const measurements: number[] = [];
 				for (let i = 0; i < 500; i++) {
@@ -59,7 +142,7 @@ export const GET: RequestHandler = async ({ request }) => {
 					}
 				});
 
-				// 3. WebAssembly Sandbox Interrogation
+				// 7. WASM INTERPRETATION SANDBOX
 				let wasmCompiled = false;
 				let wasmCompileTime = -1;
 				if (typeof WebAssembly !== 'undefined') {
@@ -78,7 +161,7 @@ export const GET: RequestHandler = async ({ request }) => {
 					data: { allowed: wasmCompiled, compileDurationMs: wasmCompileTime }
 				});
 
-				// 4. Memory Allocation Boundaries
+				// 8. MEMORY ALLOCATION CEILING
 				let allocatedMegaBytes = 0;
 				if (typeof WebAssembly !== 'undefined') {
 					try {
@@ -89,21 +172,18 @@ export const GET: RequestHandler = async ({ request }) => {
 							const smallWasmMemory = new WebAssembly.Memory({ initial: 512 });
 							allocatedMegaBytes = smallWasmMemory.buffer.byteLength / (1024 * 1024);
 						} catch {
-							allocatedMegaBytes = 0; // Completely memory restricted
+							allocatedMegaBytes = 0;
 						}
 					}
 				}
 				sendChunk({ type: 'memory', data: { MaxSafeWasmAllocationMb: allocatedMegaBytes } });
 
-				// 5. Outbound Network Egress Containment
+				// 9. OUTBOUND EGRESS CHECK
 				let internetAccess = false;
 				let egressLatencyMs = -1;
 				try {
 					const netStart = performance.now();
-					await fetch('https://1.1.1.1', {
-						method: 'HEAD',
-						signal: AbortSignal.timeout(600)
-					});
+					await fetch('https://1.1.1.1', { method: 'HEAD', signal: AbortSignal.timeout(500) });
 					internetAccess = true;
 					egressLatencyMs = performance.now() - netStart;
 				} catch {
@@ -111,21 +191,16 @@ export const GET: RequestHandler = async ({ request }) => {
 				}
 				sendChunk({
 					type: 'egress',
-					data: {
-						MaxSafeWasmAllocationMb: allocatedMegaBytes,
-						outboundAccess: internetAccess,
-						pingMs: egressLatencyMs
-					}
+					data: { outboundAccess: internetAccess, pingMs: egressLatencyMs }
 				});
 
-				// 6. Thread Pool & Starvation Burn
+				// 10. CONCURRENCY & TASK STARVATION
 				const loopStart = performance.now();
 				let counter = 0;
 				while (performance.now() - loopStart < 20) {
 					counter++;
 				}
 				const loopEnd = performance.now();
-
 				const macroStart = performance.now();
 				await new Promise<void>((r) => setTimeout(r, 0));
 
@@ -138,7 +213,7 @@ export const GET: RequestHandler = async ({ request }) => {
 					}
 				});
 			} catch (err: unknown) {
-				const errMsg = err instanceof Error ? err.message : 'Unknown pipeline failure';
+				const errMsg = err instanceof Error ? err.message : 'Critical Stream Fracture';
 				sendChunk({ type: 'panic', data: { message: errMsg } });
 			} finally {
 				controller.close();
