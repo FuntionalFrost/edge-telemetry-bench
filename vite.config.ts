@@ -1,3 +1,4 @@
+import adapterAuto from '@sveltejs/adapter-auto';
 import type { Adapter } from '@sveltejs/kit';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
@@ -26,8 +27,8 @@ switch (target) {
 		break;
 	default:
 		// Fallback adapter for type evaluation and local development context
-		selectedAdapter = adapterCloudflare();
-		console.log('⚠️ No DEPLOY_TARGET specified. Defaulting compile pipeline to Cloudflare.');
+		selectedAdapter = adapterAuto();
+		console.log('⚠️ No DEPLOY_TARGET specified.');
 }
 
 export default defineConfig({
