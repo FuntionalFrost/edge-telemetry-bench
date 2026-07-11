@@ -1,4 +1,4 @@
-name: Multi-Edge Deployment Pipeline
+name: Multi-Platform Deployment Pipeline
 
 on:
   push:
@@ -41,7 +41,7 @@ jobs:
   # STAGE 2: Continuous Deployment (Parallel Cloud Delivery)
   # =========================================================
   cd:
-    name: Deploy to ${{ matrix.target }} Edge
+    name: Deploy to ${{ matrix.target }}
     needs: ci
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -69,7 +69,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # ---------------------------------------------------
-      # TARGET MATRIX SLICE: CLOUDFLARE WORKERS/PAGES
+      # TARGET MATRIX SLICE: CLOUDFLARE WORKERS
       # ---------------------------------------------------
       - name: Execute Cloudflare Build & Deployment Loop
         if: matrix.target == 'Cloudflare'
@@ -82,7 +82,7 @@ jobs:
           pnpm wrangler deploy
 
       # ---------------------------------------------------
-      # TARGET MATRIX SLICE: VERCEL EDGE
+      # TARGET MATRIX SLICE: VERCEL
       # ---------------------------------------------------
       - name: Execute Vercel Build & Deployment Loop
         if: matrix.target == 'Vercel'
@@ -99,7 +99,7 @@ jobs:
           vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
 
       # ---------------------------------------------------
-      # TARGET MATRIX SLICE: NETLIFY EDGE
+      # TARGET MATRIX SLICE: NETLIFY
       # ---------------------------------------------------
       - name: Execute Netlify Build & Deployment Loop
         if: matrix.target == 'Netlify'

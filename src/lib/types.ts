@@ -15,7 +15,7 @@ export interface IdentityChunk {
 export interface ClockChunk {
 	minIncrementMs: number;
 	isCoarsened: boolean;
-	estimatedMitigationLevel: 'Aggressive Spectre Guard' | 'Low/None' | 'Absolute Edge Lockdown';
+	estimatedMitigationLevel: 'Aggressive Spectre Guard' | 'Low/None' | 'Absolute Lockdown';
 }
 
 export interface WasmChunk {

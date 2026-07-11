@@ -1,4 +1,5 @@
 allowBuilds:
+  carbon-components-svelte: true
   esbuild: true
   sharp: true
   workerd: true

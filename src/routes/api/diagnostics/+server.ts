@@ -172,7 +172,7 @@ export const GET: RequestHandler = async ({ request }) => {
 						isCoarsened: minDetectedIncrement >= 0.1 || minDetectedIncrement === 0,
 						estimatedMitigationLevel:
 							minDetectedIncrement === 0
-								? 'Absolute Edge Lockdown'
+								? 'Absolute Lockdown'
 								: minDetectedIncrement >= 0.1
 									? 'Aggressive Spectre Guard'
 									: 'Low/None'
