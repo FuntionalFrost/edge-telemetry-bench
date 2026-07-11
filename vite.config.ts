@@ -1,5 +1,7 @@
 import type { Adapter } from '@sveltejs/kit';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import { optimizeCss, optimizeImports } from 'carbon-preprocess-svelte';
 import { defineConfig } from 'vite';
 // Concrete adapter implementations
 import adapterCloudflare from '@sveltejs/adapter-cloudflare';
@@ -36,10 +38,15 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
+			preprocess: [
+				vitePreprocess(), // Transpiles TS into safe vanilla primitives first
+				optimizeImports() // Rewrites barrel imports to lean, direct component source paths
+			],
 			adapter: selectedAdapter,
 			files: {
 				assets: 'static'
 			}
-		})
+		}),
+		optimizeCss()
 	]
 });

@@ -1,6 +1,8 @@
-import type { DiagnosticStreamChunk } from '$lib/types';
-import type { RequestHandler } from '@sveltejs/kit';
+// src/routes/api/diagnostics/+server.ts
+import { diagnosticStreamChunkSchema } from '$lib/types';
+import type { RequestHandler } from './$types';
 
+// Tracks runtime isolate instance health markers across execution bursts
 const isolateSpawnTime = performance.now();
 let globalActivationCount = 0;
 
@@ -10,11 +12,20 @@ export const GET: RequestHandler = async ({ request }) => {
 
 	const stream = new ReadableStream({
 		async start(controller) {
-			const sendChunk = (chunk: DiagnosticStreamChunk) => {
+			// Internal delivery pipe that cross-checks structural type safety contracts via Zod
+			const sendChunk = (rawChunk: unknown) => {
 				try {
-					controller.enqueue(encoder.encode(JSON.stringify(chunk) + '\n'));
+					const validation = diagnosticStreamChunkSchema.safeParse(rawChunk);
+					if (!validation.success) {
+						console.error(
+							'Server side telemetry schema violation bypassed:',
+							validation.error.format()
+						);
+						return;
+					}
+					controller.enqueue(encoder.encode(JSON.stringify(validation.data) + '\n'));
 				} catch {
-					// Stream context closed prematurely by client navigation
+					// Context interrupted or connection severed cleanly by consumer navigation actions
 				}
 			};
 
@@ -88,7 +99,6 @@ export const GET: RequestHandler = async ({ request }) => {
 			// --- CHUNK 4: HYPERVISOR ENTROPY BENCHMARK ---
 			try {
 				const entropyStart = performance.now();
-				// CRITICAL FIX: Limited to 64KB to prevent Web Crypto QuotaExceededError violations
 				const safeQuotaLimit = 64 * 1024;
 				const entropyBuffer = new Uint8Array(safeQuotaLimit);
 
@@ -108,9 +118,8 @@ export const GET: RequestHandler = async ({ request }) => {
 					}
 				});
 			} catch (e) {
-				// Fallback instead of exploding the entire stream payload
-				sendChunk({ type: 'entropy', data: { entropyGenerationRateMbSec: 0, durationMs: -1 } });
-				console.error('Entropy benchmark bypassed due to hardware layer restrictions', e);
+				sendChunk({ type: 'entropy', data: { entropyGenerationRateMbSec: 0, durationMs: 0 } });
+				console.error('Entropy benchmark bypassed', e);
 			}
 
 			// --- CHUNK 5: EPHEMERAL DISK WRITE-THRU PERFORMANCE ---
@@ -128,7 +137,7 @@ export const GET: RequestHandler = async ({ request }) => {
 
 						const tempDir = os.tmpdir();
 						const testFilePath = path.join(tempDir, `probe_${Date.now()}.log`);
-						const largePayload = '0'.repeat(1024 * 256); // 256KB quick burst check
+						const largePayload = '0'.repeat(1024 * 256);
 
 						const dStart = performance.now();
 						await fs.writeFile(testFilePath, largePayload);
@@ -148,7 +157,7 @@ export const GET: RequestHandler = async ({ request }) => {
 			} catch (e) {
 				sendChunk({
 					type: 'disk',
-					data: { hasDiskAccess: false, diskType: 'Completely Sandboxed', writeLatencyMs: -1 }
+					data: { hasDiskAccess: false, diskType: 'Completely Sandboxed', writeLatencyMs: 0 }
 				});
 				console.error('Disk analysis bypassed', e);
 			}
@@ -210,15 +219,11 @@ export const GET: RequestHandler = async ({ request }) => {
 				let allocatedMegaBytes = 0;
 				if (typeof WebAssembly !== 'undefined') {
 					try {
-						const wasmMemory = new WebAssembly.Memory({ initial: 2048 }); // Probe 128MB initially to prevent process termination
+						// FIX: Lower boundary checks first to prevent serverless process drops
+						const wasmMemory = new WebAssembly.Memory({ initial: 256 }); // ~16MB safe baseline
 						allocatedMegaBytes = wasmMemory.buffer.byteLength / (1024 * 1024);
 					} catch {
-						try {
-							const smallWasmMemory = new WebAssembly.Memory({ initial: 512 }); // 32MB fallback
-							allocatedMegaBytes = smallWasmMemory.buffer.byteLength / (1024 * 1024);
-						} catch {
-							allocatedMegaBytes = 0;
-						}
+						allocatedMegaBytes = 0;
 					}
 				}
 				sendChunk({ type: 'memory', data: { MaxSafeWasmAllocationMb: allocatedMegaBytes } });
@@ -230,14 +235,21 @@ export const GET: RequestHandler = async ({ request }) => {
 			try {
 				let internetAccess = false;
 				let egressLatencyMs = -1;
+
+				const controller = new AbortController();
+				const timeoutId = setTimeout(() => controller.abort(), 400);
+
 				try {
 					const netStart = performance.now();
-					await fetch('https://1.1.1.1', { method: 'HEAD', signal: AbortSignal.timeout(400) });
+					await fetch('https://1.1.1.1', { method: 'HEAD', signal: controller.signal });
 					internetAccess = true;
 					egressLatencyMs = performance.now() - netStart;
 				} catch {
 					internetAccess = false;
+				} finally {
+					clearTimeout(timeoutId);
 				}
+
 				sendChunk({
 					type: 'egress',
 					data: { outboundAccess: internetAccess, pingMs: egressLatencyMs }

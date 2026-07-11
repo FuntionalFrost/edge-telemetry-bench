@@ -1,96 +1,156 @@
-export interface IdentityChunk {
-	spawnTime: number;
-	uptimeMs: number;
-	activations: number;
-	globalKeysCount: number;
-	runtimeGlobals: {
-		hasProcess: boolean;
-		hasDeno: boolean;
-		hasBun: boolean;
-		hasWebAssembly: boolean;
-		hasCaches: boolean;
-	};
-}
+// src/lib/types.ts
+import { z } from 'zod';
 
-export interface ClockChunk {
-	minIncrementMs: number;
-	isCoarsened: boolean;
-	estimatedMitigationLevel: 'Aggressive Spectre Guard' | 'Low/None' | 'Absolute Lockdown';
-}
+// Sub-schemas for cleaner layout structure
+const runtimeGlobalsSchema = z.strictObject({
+	hasProcess: z.boolean(),
+	hasDeno: z.boolean(),
+	hasBun: z.boolean(),
+	hasWebAssembly: z.boolean(),
+	hasCaches: z.boolean()
+});
 
-export interface WasmChunk {
-	allowed: boolean;
-	compileDurationMs: number;
-}
+// Master Discriminated Union Schema
+export const diagnosticStreamChunkSchema = z.discriminatedUnion('type', [
+	z.strictObject({
+		type: z.literal('identity'),
+		data: z.strictObject({
+			spawnTime: z.number(),
+			uptimeMs: z.number(),
+			activations: z.number(),
+			globalKeysCount: z.number(),
+			runtimeGlobals: runtimeGlobalsSchema
+		})
+	}),
+	z.strictObject({
+		type: z.literal('contextLeak'),
+		data: z.strictObject({
+			contextIsPolluted: z.boolean(),
+			previousMarkerDetected: z.string().nullable(),
+			currentAssignedMarker: z.string()
+		})
+	}),
+	z.strictObject({
+		type: z.literal('jit'),
+		data: z.strictObject({
+			dynamicEvalAllowed: z.boolean(),
+			evalDurationMs: z.number()
+		})
+	}),
+	z.strictObject({
+		type: z.literal('entropy'),
+		data: z.strictObject({
+			entropyGenerationRateMbSec: z.number(),
+			durationMs: z.number()
+		})
+	}),
+	z.strictObject({
+		type: z.literal('disk'),
+		data: z.strictObject({
+			hasDiskAccess: z.boolean(),
+			diskType: z.enum([
+				'Persistent/Ephemeral Physical',
+				'In-Memory Tmpfs',
+				'Completely Sandboxed'
+			]),
+			writeLatencyMs: z.number()
+		})
+	}),
+	z.strictObject({
+		type: z.literal('clock'),
+		data: z.strictObject({
+			minIncrementMs: z.number(),
+			isCoarsened: z.boolean(),
+			estimatedMitigationLevel: z.enum([
+				'Absolute Lockdown',
+				'Aggressive Spectre Guard',
+				'Low/None'
+			])
+		})
+	}),
+	z.strictObject({
+		type: z.literal('wasm'),
+		data: z.strictObject({
+			allowed: z.boolean(),
+			compileDurationMs: z.number()
+		})
+	}),
+	z.strictObject({
+		type: z.literal('memory'),
+		data: z.strictObject({
+			MaxSafeWasmAllocationMb: z.number()
+		})
+	}),
+	z.strictObject({
+		type: z.literal('egress'),
+		data: z.strictObject({
+			outboundAccess: z.boolean(),
+			pingMs: z.number()
+		})
+	}),
+	z.strictObject({
+		type: z.literal('surveillance'),
+		data: z.strictObject({
+			clientIpHeaderLeaked: z.string(),
+			proxyChainDetected: z.boolean(),
+			requestFingerprintHash: z.string(),
+			anonymityScore: z.number()
+		})
+	}),
+	z.strictObject({
+		type: z.literal('concurrency'),
+		data: z.strictObject({
+			syncBurnOps: z.number(),
+			eventLoopLagMs: z.number(),
+			totalBurnDuration: z.number()
+		})
+	}),
+	z.strictObject({
+		type: z.literal('panic'),
+		data: z.strictObject({
+			message: z.string()
+		})
+	})
+]);
 
-export interface MemoryChunk {
-	MaxSafeWasmAllocationMb: number;
-}
+// Client Telemetry Schema
+export const clientHardwareMetricsSchema = z.strictObject({
+	cores: z.union([z.number(), z.literal('Unknown')]),
+	gpu: z.strictObject({ vendor: z.string(), renderer: z.string() }),
+	memory: z.union([
+		z.strictObject({ heapLimitMb: z.number() }),
+		z.literal('Restricted Sandboxed API')
+	]),
+	webGPU: z.boolean(),
+	userAgent: z.string(),
+	fingerprint: z.strictObject({
+		canvasHash: z.string(),
+		isFarblingDetected: z.boolean(),
+		adBlockerActive: z.boolean()
+	})
+});
 
-export interface EgressChunk {
-	outboundAccess: boolean;
-	pingMs: number;
-}
+// Compile out the TypeScript types purely from the schemas
+export type DiagnosticStreamChunk = z.infer<typeof diagnosticStreamChunkSchema>;
+export type ClientHardwareMetrics = z.infer<typeof clientHardwareMetricsSchema>;
 
-export interface ConcurrencyChunk {
-	syncBurnOps: number;
-	eventLoopLagMs: number;
-	totalBurnDuration: number;
-}
+/**
+ * DRY Type Mapper: Distributes the union and maps each 'type' literal
+ * to its corresponding 'data' block format automatically.
+ */
+type ChunkDataMap = {
+	[T in DiagnosticStreamChunk as T['type']]: T['data'];
+};
 
-export interface ContextLeakChunk {
-	contextIsPolluted: boolean;
-	previousMarkerDetected: string | null;
-	currentAssignedMarker: string;
-}
-
-export interface JitChunk {
-	dynamicEvalAllowed: boolean;
-	evalDurationMs: number;
-}
-
-export interface EntropyChunk {
-	entropyGenerationRateMbSec: number;
-	durationMs: number;
-}
-
-export interface EphemeralDiskChunk {
-	hasDiskAccess: boolean;
-	diskType: 'Persistent/Ephemeral Physical' | 'In-Memory Tmpfs' | 'Completely Sandboxed';
-	writeLatencyMs: number;
-}
-
-// --- NEW PRIVACY & SURVEILLANCE CONTRACT ---
-export interface SurveillanceChunk {
-	clientIpHeaderLeaked: string;
-	proxyChainDetected: boolean;
-	requestFingerprintHash: string;
-	anonymityScore: number;
-}
-
-export type DiagnosticStreamChunk =
-	| { type: 'identity'; data: IdentityChunk }
-	| { type: 'clock'; data: ClockChunk }
-	| { type: 'wasm'; data: WasmChunk }
-	| { type: 'memory'; data: MemoryChunk }
-	| { type: 'egress'; data: EgressChunk }
-	| { type: 'concurrency'; data: ConcurrencyChunk }
-	| { type: 'contextLeak'; data: ContextLeakChunk }
-	| { type: 'jit'; data: JitChunk }
-	| { type: 'entropy'; data: EntropyChunk }
-	| { type: 'disk'; data: EphemeralDiskChunk }
-	| { type: 'surveillance'; data: SurveillanceChunk }
-	| { type: 'panic'; data: { message: string } };
-
-export interface ClientHardwareMetrics {
-	cores: number | 'Unknown';
-	gpu: { vendor: string; renderer: string };
-	memory: { heapLimitMb: number } | string;
-	webGPU: boolean;
-	userAgent: string;
-	fingerprint: {
-		canvasHash: string;
-		isFarblingDetected: boolean;
-		adBlockerActive: boolean;
-	};
-}
+// Now your explicit state types are cleanly derived by referencing the map:
+export type IdentityChunk = ChunkDataMap['identity'];
+export type ClockChunk = ChunkDataMap['clock'];
+export type WasmChunk = ChunkDataMap['wasm'];
+export type MemoryChunk = ChunkDataMap['memory'];
+export type EgressChunk = ChunkDataMap['egress'];
+export type ConcurrencyChunk = ChunkDataMap['concurrency'];
+export type ContextLeakChunk = ChunkDataMap['contextLeak'];
+export type JitChunk = ChunkDataMap['jit'];
+export type EntropyChunk = ChunkDataMap['entropy'];
+export type EphemeralDiskChunk = ChunkDataMap['disk'];
+export type SurveillanceChunk = ChunkDataMap['surveillance'];

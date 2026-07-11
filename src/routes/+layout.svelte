@@ -1,6 +1,6 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
-
+	import 'carbon-components-svelte/css/g100.css';
 	let { children } = $props();
 </script>
 
