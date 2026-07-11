@@ -20,7 +20,7 @@ switch (target) {
 	case 'vercel':
 		// Pinning to Vercel Edge Runtime for the project, as Vercel's default is Node.js
 		// selectedAdapter = adapterVercel({ runtime: 'edge' });
-		selectedAdapter = adapterVercel({ runtime: 'nodejs26' });
+		selectedAdapter = adapterVercel();
 		break;
 	case 'netlify':
 		// Forcing Deno-backed Netlify Edge Functions execution

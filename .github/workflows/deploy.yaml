@@ -20,12 +20,12 @@ jobs:
       - name: Install pnpm Package Manager
         uses: pnpm/action-setup@v6
         with:
-          version: 11 # Ensures deterministic pnpm version execution
+          version: 11
 
       - name: Initialize Node.js Environment
         uses: actions/setup-node@v6
         with:
-          node-version: 26
+          node-version: 24
           cache: 'pnpm'
 
       - name: Materialize Dependencies
@@ -62,7 +62,7 @@ jobs:
       - name: Initialize Node.js Environment
         uses: actions/setup-node@v6
         with:
-          node-version: 26
+          node-version: 24
           cache: 'pnpm'
 
       - name: Materialize Dependencies
