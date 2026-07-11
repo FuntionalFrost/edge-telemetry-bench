@@ -19,11 +19,13 @@ switch (target) {
 		break;
 	case 'vercel':
 		// Pinning to Vercel Edge Runtime for the project, as Vercel's default is Node.js
-		selectedAdapter = adapterVercel({ runtime: 'edge' });
+		// selectedAdapter = adapterVercel({ runtime: 'edge' });
+		selectedAdapter = adapterVercel();
 		break;
 	case 'netlify':
 		// Forcing Deno-backed Netlify Edge Functions execution
-		selectedAdapter = adapterNetlify({ edge: true });
+		// selectedAdapter = adapterNetlify({ edge: true });
+		selectedAdapter = adapterNetlify();
 		break;
 	default:
 		// Fallback adapter for type evaluation and local development context
