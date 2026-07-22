@@ -80,7 +80,7 @@ jobs:
           pnpm wrangler types --config wrangler.worker.jsonc
           pnpm build:cloudflare
           pnpm wrangler deploy --config wrangler.worker.jsonc
-          pnpm wrangler pages deploy --config wrangler.jsonc
+          pnpm wrangler pages deploy
 
       # ---------------------------------------------------
       # TARGET MATRIX SLICE: VERCEL
