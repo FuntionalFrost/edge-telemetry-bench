@@ -91,11 +91,11 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          pnx vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          pnpm dlx vercel pull --yes --environment=production --token=$VERCEL_TOKEN
           # Build locally on the runner using the configuration we prepared
           pnpm build:vercel
           # Bundle and deploy the locally compiled output folder
-          pnx vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+          pnpm dlx vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
 
       # ---------------------------------------------------
       # TARGET MATRIX SLICE: NETLIFY
@@ -107,5 +107,4 @@ jobs:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         run: |
           pnpm build:netlify
-          # Fix: Redirect directory target to 'build' where static assets live
-          pnx netlify-cli deploy --prod --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN
+          pnpm dlx netlify-cli deploy --prod --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN
