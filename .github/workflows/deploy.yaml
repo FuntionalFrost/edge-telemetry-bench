@@ -108,4 +108,4 @@ jobs:
         run: |
           pnpm build:netlify
           # Fix: Redirect directory target to 'build' where static assets live
-          pnx netlify deploy --prod --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN
+          pnx netlify-cli deploy --prod --site=$NETLIFY_SITE_ID --auth=$NETLIFY_AUTH_TOKEN
