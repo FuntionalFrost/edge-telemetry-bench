@@ -80,7 +80,7 @@ jobs:
           pnpm wrangler types
           pnpm build:cloudflare
           pnpm wrangler deploy
-          pnpm wrangler pages deploy .svelte-kit/cloudflare --project-name=edge-telemetry-bench
+          pnpm wrangler pages deploy
 
       # ---------------------------------------------------
       # TARGET MATRIX SLICE: VERCEL
