@@ -69,7 +69,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # ---------------------------------------------------
-      # TARGET MATRIX SLICE: CLOUDFLARE WORKERS
+      # TARGET MATRIX SLICE: CLOUDFLARE
       # ---------------------------------------------------
       - name: Execute Cloudflare Build & Deployment Loop
         if: matrix.target == 'Cloudflare'
@@ -80,6 +80,7 @@ jobs:
           pnpm wrangler types
           pnpm build:cloudflare
           pnpm wrangler deploy
+          pnpm wrangler pages deploy .sveltekit/cloudflare --project-name=edge-telemetry-bench
 
       # ---------------------------------------------------
       # TARGET MATRIX SLICE: VERCEL

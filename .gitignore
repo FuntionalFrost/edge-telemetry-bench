@@ -24,6 +24,4 @@ vite.config.ts.timestamp-*
 
 # Misc
 /.vscode
-
-.vercel
-.env*
+/.idea
