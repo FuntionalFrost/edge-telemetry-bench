@@ -4,11 +4,6 @@
 	"pages_build_output_dir": ".svelte-kit/cloudflare",
 	"compatibility_date": "2026-07-10",
 	"compatibility_flags": ["nodejs_als"],
-	"main": ".svelte-kit/cloudflare/_worker.js",
-	"assets": {
-		"binding": "ASSETS",
-		"directory": ".svelte-kit/cloudflare"
-	},
 	"workers_dev": true,
 	"preview_urls": true
 }
