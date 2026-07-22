@@ -3,6 +3,5 @@
 	"name": "edge-telemetry-bench",
 	"pages_build_output_dir": ".svelte-kit/cloudflare",
 	"compatibility_date": "2026-07-10",
-	"compatibility_flags": ["nodejs_als"],
-	"preview_urls": true
+	"compatibility_flags": ["nodejs_als"]
 }
