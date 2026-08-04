@@ -35,11 +35,11 @@ The dashboard continuously streams and analyzes 11 core vectors across server is
 
 ## Tech Stack
 
-* **Framework:** [SvelteKit](https://kit.svelte.dev/) (Svelte 5 Runes API)
-* **UI Design System:** [Carbon Components Svelte](https://github.com/carbon-design-system/carbon-components-svelte)
-* **Icons:** [Carbon Icons Svelte](https://github.com/carbon-design-system/carbon-icons-svelte)
-* **Typography:** IBM Plex Mono / IBM Plex Sans
-* **Styles:** Custom Carbon dark/cyberpunk themes
+- **Framework:** [SvelteKit](https://kit.svelte.dev/) (Svelte 5 Runes API)
+- **UI Design System:** [Carbon Components Svelte](https://github.com/carbon-design-system/carbon-components-svelte)
+- **Icons:** [Carbon Icons Svelte](https://github.com/carbon-design-system/carbon-icons-svelte)
+- **Typography:** IBM Plex Mono / IBM Plex Sans
+- **Styles:** Custom Carbon dark/cyberpunk themes
 
 ---
 
