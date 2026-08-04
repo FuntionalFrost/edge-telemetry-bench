@@ -1,4 +1,4 @@
-# `edge-telemetry-bench`
+# Edge Telemetry Bench
 
 > **ISOLATE INTERROGATOR // SEC.SURVEILLANCE.MESH**
 > An adversarial benchmarking suite and real-time telemetry interrogator built for serverless JavaScript isolates, edge runtimes, and client environment analysis.
