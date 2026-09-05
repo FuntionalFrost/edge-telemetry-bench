@@ -129,7 +129,7 @@ Deploying `edge-telemetry-bench` is zero-config via direct Git integration with 
 
 ## Continuous Integration (CI)
 
-A lightweight GitHub Actions pipeline ([`.github/workflows/deploy.yaml`](.github/workflows/deploy.yaml)) automatically runs on every push and pull request to verify code quality and type correctness using [`pnpm/setup`](https://github.com/pnpm/setup) with Node.js 26:
+A lightweight GitHub Actions pipeline ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) automatically runs on every push and pull request to verify code quality and type correctness using [`pnpm/setup`](https://github.com/pnpm/setup) with Node.js 26:
 
 - `pnpm lint`: Code style and ESLint validation
 - `pnpm check`: Svelte 5 and TypeScript type diagnostics
