@@ -1,4 +1,4 @@
-name: Continuous Integration
+name: CI
 
 on:
   push:
@@ -6,27 +6,31 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  IBM_TELEMETRY_DISABLED: 'true'
-  VERCEL_TELEMETRY_DISABLED: '1'
-  WRANGLER_SEND_METRICS: 'false'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  ci:
-    name: Code Quality & Type Check
+  build-and-check:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Source Code
+      - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Setup pnpm and Node.js 26
+      - name: Setup pnpm and Node.js
         uses: pnpm/setup@v2
         with:
+          version: 11
           runtime: node@26
           cache: true
+          require-lockfile: true
 
-      - name: Static Code Analysis (Lint & Formatting)
+      - name: Lint and format check
         run: pnpm lint
 
-      - name: Type Check Project Verification
+      - name: Run svelte-check
         run: pnpm check
+
+      - name: Build production bundle
+        run: pnpm build
