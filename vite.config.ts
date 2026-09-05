@@ -1,44 +1,19 @@
-import adapterAuto from '@sveltejs/adapter-auto';
 import type { Adapter } from '@sveltejs/kit';
 import { sveltekit } from '@sveltejs/kit/vite';
-
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { optimizeCss, optimizeImports } from 'carbon-preprocess-svelte';
 import { defineConfig } from 'vite';
 
-// Concrete adapter implementations
 import adapterCloudflare from '@sveltejs/adapter-cloudflare';
-
-import adapterNetlify from '@sveltejs/adapter-netlify';
 import adapterVercel from '@sveltejs/adapter-vercel';
 
-// Statically assign the abstract Adapter contract
-let selectedAdapter: Adapter;
-
-const target = process.env.DEPLOY_TARGET;
-
-switch (target) {
-	case 'cloudflare':
-		selectedAdapter = adapterCloudflare();
-		break;
-
-	case 'vercel':
-		// Pinning to Vercel Edge Runtime for the project, as Vercel's default is Node.js
-		// selectedAdapter = adapterVercel({ runtime: 'edge' });
-		selectedAdapter = adapterVercel();
-		break;
-
-	case 'netlify':
-		// Forcing Deno-backed Netlify Edge Functions execution
-		// selectedAdapter = adapterNetlify({ edge: true });
-		selectedAdapter = adapterNetlify();
-		break;
-
-	default:
-		// Fallback adapter for type evaluation and local development context
-		selectedAdapter = adapterAuto();
-		console.log('⚠️ No DEPLOY_TARGET specified.');
-}
+// Default to Cloudflare Workers (primary isolate target), or switch to Vercel when specified
+const selectedAdapter: Adapter =
+	process.env.DEPLOY_TARGET === 'vercel'
+		? adapterVercel({
+				runtime: (process.env.VERCEL_RUNTIME as 'edge' | 'nodejs22.x') || 'edge'
+			})
+		: adapterCloudflare();
 
 export default defineConfig({
 	plugins: [

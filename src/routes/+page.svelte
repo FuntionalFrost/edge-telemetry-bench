@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { gatherClientMetrics } from '$lib/client/hardware';
+	import TelemetryTile from '$lib/components/TelemetryTile.svelte';
 	import type {
 		ClientHardwareMetrics,
 		ClockChunk,
@@ -15,19 +16,10 @@
 		WasmChunk
 	} from '$lib/types';
 	import { diagnosticStreamChunkSchema } from '$lib/types';
-	import {
-		Button,
-		Column,
-		Grid,
-		InlineLoading,
-		InlineNotification,
-		Row,
-		Tag,
-		Tile
-	} from 'carbon-components-svelte';
+	import { Button, Column, Grid, InlineNotification, Row, Tag } from 'carbon-components-svelte';
 	import {
 		Code,
-		DataBase, // FIXED: Corrected lower-case 'b' casing string mismatch
+		DataBase,
 		Flash,
 		Laptop,
 		Meter,
@@ -35,13 +27,13 @@
 		Play,
 		Terminal,
 		Timer,
-		View, // INTEGRATED: Added native element tracker for the privacy panel
+		View,
 		VirtualMachine,
 		Warning
 	} from 'carbon-icons-svelte';
 	import { onMount } from 'svelte';
 
-	// DRY Unified Telemetry Matrix
+	// Unified Reactive Telemetry Matrix
 	let telemetry = $state<{
 		identity: IdentityChunk | null;
 		clock: ClockChunk | null;
@@ -109,10 +101,7 @@
 						throw new Error(chunk.data.message);
 					}
 
-					// 1. Exclude panic to ensure the key is safe to map to the telemetry object
 					const targetKey = chunk.type as Exclude<typeof chunk.type, 'panic'>;
-
-					// 2. Cast telemetry as a loose Record of those keys to bypass the single-line correlation strictness
 					(telemetry as Record<typeof targetKey, typeof chunk.data>)[targetKey] = chunk.data;
 				}
 			}
@@ -129,7 +118,6 @@
 		await streamDiagnostics();
 	});
 
-	// Linter Immunization bypassed cleanly by inspecting the root state object
 	$effect(() => {
 		void JSON.stringify(telemetry);
 	});
@@ -155,315 +143,302 @@
 		</Row>
 
 		<Row style="row-gap: 1.5rem;">
-			<Column lg={4} md={4} sm={4}>
-				<Tile class="telemetry-tile">
-					<div class="tile-header">
-						<h4>[01] SERVER ISOLATE ENVIRONMENT</h4>
-						<Terminal size={20} class="icon-server" />
+			<!-- [01] SERVER ISOLATE ENVIRONMENT -->
+			<TelemetryTile
+				title="[01] SERVER ISOLATE ENVIRONMENT"
+				icon={Terminal}
+				iconClass="icon-server"
+				loading={!telemetry.identity}
+				loadingText="Awaiting stream connection..."
+			>
+				{#if telemetry.identity}
+					<div class="carbon-stat">
+						Uptime: <strong>{telemetry.identity.uptimeMs.toFixed(1)} ms</strong>
 					</div>
-					{#if telemetry.identity}
-						<div class="carbon-stat">
-							Uptime: <strong>{telemetry.identity.uptimeMs.toFixed(1)} ms</strong>
-						</div>
-						<div class="carbon-stat">
-							Activations: <strong class="text-green">{telemetry.identity.activations}</strong>
-						</div>
-						<div class="carbon-stat">
-							Global Context: <strong>{telemetry.identity.globalKeysCount} primitives</strong>
-						</div>
-					{:else}
-						<InlineLoading description="Awaiting stream connection..." />
-					{/if}
-				</Tile>
-			</Column>
+					<div class="carbon-stat">
+						Activations: <strong class="text-green">{telemetry.identity.activations}</strong>
+					</div>
+					<div class="carbon-stat">
+						Global Context: <strong>{telemetry.identity.globalKeysCount} primitives</strong>
+					</div>
+				{/if}
+			</TelemetryTile>
 
-			<Column lg={4} md={4} sm={4}>
-				<Tile class="telemetry-tile">
-					<div class="tile-header">
-						<h4>[02] SIDE-CHANNEL CLOCK RESOLUTION</h4>
-						<Timer size={20} class="icon-clock" />
+			<!-- [02] SIDE-CHANNEL CLOCK RESOLUTION -->
+			<TelemetryTile
+				title="[02] SIDE-CHANNEL CLOCK RESOLUTION"
+				icon={Timer}
+				iconClass="icon-clock"
+				loading={!telemetry.clock}
+				loadingText="Probing timing pipelines..."
+			>
+				{#if telemetry.clock}
+					<div class="carbon-stat">
+						Timer Resolution: <strong>{telemetry.clock.minIncrementMs.toFixed(5)} ms</strong>
 					</div>
-					{#if telemetry.clock}
-						<div class="carbon-stat">
-							Timer Resolution: <strong>{telemetry.clock.minIncrementMs.toFixed(5)} ms</strong>
-						</div>
-						<div class="carbon-stat">
-							Spectre Mitigation Mask:
-							<span
-								class="text-highlight {telemetry.clock.isCoarsened ? 'text-red' : 'text-green'}"
-							>
-								{telemetry.clock.estimatedMitigationLevel}
-							</span>
-						</div>
-					{:else}
-						<InlineLoading description="Probing timing pipelines..." />
-					{/if}
-				</Tile>
-			</Column>
+					<div class="carbon-stat">
+						Spectre Mitigation Mask:
+						<span class="text-highlight {telemetry.clock.isCoarsened ? 'text-red' : 'text-green'}">
+							{telemetry.clock.estimatedMitigationLevel}
+						</span>
+					</div>
+				{/if}
+			</TelemetryTile>
 
-			<Column lg={4} md={4} sm={4}>
-				<Tile class="telemetry-tile">
-					<div class="tile-header">
-						<h4>[03] WASM INTERPRETATION SANDBOX</h4>
-						<Code size={20} class="icon-wasm" />
+			<!-- [03] WASM INTERPRETATION SANDBOX -->
+			<TelemetryTile
+				title="[03] WASM INTERPRETATION SANDBOX"
+				icon={Code}
+				iconClass="icon-wasm"
+				loading={!telemetry.wasm}
+				loadingText="Testing byte compilation execution restrictions..."
+			>
+				{#if telemetry.wasm}
+					<div class="carbon-stat">
+						Dynamic Compilation:
+						<Tag type={telemetry.wasm.allowed ? 'green' : 'red'} style="margin: 0;">
+							{telemetry.wasm.allowed ? 'UNRESTRICTED' : 'BLOCKED'}
+						</Tag>
 					</div>
-					{#if telemetry.wasm}
+					{#if telemetry.wasm.allowed}
 						<div class="carbon-stat">
-							Dynamic Compilation:
-							<Tag type={telemetry.wasm.allowed ? 'green' : 'red'} style="margin: 0;">
-								{telemetry.wasm.allowed ? 'UNRESTRICTED' : 'BLOCKED'}
-							</Tag>
-						</div>
-						{#if telemetry.wasm.allowed}
-							<div class="carbon-stat">
-								JIT Compile Time: <strong>{telemetry.wasm.compileDurationMs.toFixed(3)} ms</strong>
-							</div>
-						{/if}
-					{:else}
-						<InlineLoading description="Testing byte compilation execution restrictions..." />
-					{/if}
-				</Tile>
-			</Column>
-
-			<Column lg={4} md={4} sm={4}>
-				<Tile class="telemetry-tile">
-					<div class="tile-header">
-						<h4>[04] BOUNDARY EXPLORATION & EGRESS</h4>
-						<Network_2 size={20} class="icon-network" />
-					</div>
-					{#if telemetry.memory}
-						<div class="carbon-stat">
-							Max Safe WASM Allocation: <strong class="text-purple"
-								>{telemetry.memory.MaxSafeWasmAllocationMb} MB</strong
-							>
+							JIT Compile Time: <strong>{telemetry.wasm.compileDurationMs.toFixed(3)} ms</strong>
 						</div>
 					{/if}
-					{#if telemetry.egress}
+				{/if}
+			</TelemetryTile>
+
+			<!-- [04] BOUNDARY EXPLORATION & EGRESS -->
+			<TelemetryTile
+				title="[04] BOUNDARY EXPLORATION & EGRESS"
+				icon={Network_2}
+				iconClass="icon-network"
+				loading={!telemetry.egress}
+				loadingText="Measuring isolate boundary allowances..."
+			>
+				{#if telemetry.memory}
+					<div class="carbon-stat">
+						Max Safe WASM Allocation: <strong class="text-purple"
+							>{telemetry.memory.MaxSafeWasmAllocationMb} MB</strong
+						>
+					</div>
+				{/if}
+				{#if telemetry.egress}
+					<div class="carbon-stat">
+						Outbound Internet Egress:
+						<Tag type={telemetry.egress.outboundAccess ? 'green' : 'red'} style="margin: 0;">
+							{telemetry.egress.outboundAccess ? 'OPEN' : 'FIREWALLED'}
+						</Tag>
+					</div>
+					{#if telemetry.egress.pingMs !== -1}
 						<div class="carbon-stat">
-							Outbound Internet Egress:
-							<Tag type={telemetry.egress.outboundAccess ? 'green' : 'red'} style="margin: 0;">
-								{telemetry.egress.outboundAccess ? 'OPEN' : 'FIREWALLED'}
-							</Tag>
+							Egress Network Latency: <strong>{telemetry.egress.pingMs.toFixed(1)} ms</strong>
 						</div>
-						{#if telemetry.egress.pingMs !== -1}
-							<div class="carbon-stat">
-								Egress Network Latency: <strong>{telemetry.egress.pingMs.toFixed(1)} ms</strong>
-							</div>
-						{/if}
-					{:else}
-						<InlineLoading description="Measuring isolate boundary allowances..." />
 					{/if}
-				</Tile>
-			</Column>
+				{/if}
+			</TelemetryTile>
 
-			<Column lg={4} md={4} sm={4}>
-				<Tile class="telemetry-tile">
-					<div class="tile-header">
-						<h4>[05] MICROTASK CONCURRENCY MESH</h4>
-						<VirtualMachine size={20} class="icon-concurrency" />
+			<!-- [05] MICROTASK CONCURRENCY MESH -->
+			<TelemetryTile
+				title="[05] MICROTASK CONCURRENCY MESH"
+				icon={VirtualMachine}
+				iconClass="icon-concurrency"
+				loading={!telemetry.concurrency}
+				loadingText="Evaluating microtask starvation ceilings..."
+			>
+				{#if telemetry.concurrency}
+					<div class="carbon-stat">
+						Event Loop Scheduling Lag: <strong class="text-green"
+							>{telemetry.concurrency.eventLoopLagMs.toFixed(3)} ms</strong
+						>
 					</div>
-					{#if telemetry.concurrency}
+					<div class="carbon-stat">
+						Sync Burn Capacity (20ms): <strong class="text-purple"
+							>{telemetry.concurrency.syncBurnOps.toLocaleString()} ops</strong
+						>
+					</div>
+				{/if}
+			</TelemetryTile>
+
+			<!-- [06] STATE POLLUTION / MULTI-TENANCY -->
+			<TelemetryTile
+				title="[06] STATE POLLUTION / MULTI-TENANCY"
+				icon={Warning}
+				iconClass="icon-bleed"
+				variant="bleed"
+				loading={!telemetry.contextLeak}
+				loadingText="Evaluating context security maps..."
+			>
+				{#if telemetry.contextLeak}
+					<div class="carbon-stat">
+						Isolate Memory Bleed:
+						<Tag
+							type={telemetry.contextLeak.contextIsPolluted ? 'red' : 'green'}
+							style="margin: 0;"
+						>
+							{telemetry.contextLeak.contextIsPolluted ? 'DIRTY HEAP CACHE' : 'PURE ISOLATE'}
+						</Tag>
+					</div>
+					<div class="carbon-stat">
+						Current Node Tag: <span class="mono-token"
+							>{telemetry.contextLeak.currentAssignedMarker}</span
+						>
+					</div>
+				{/if}
+			</TelemetryTile>
+
+			<!-- [07] ENGINE JIT PRIVILEGES -->
+			<TelemetryTile
+				title="[07] ENGINE JIT PRIVILEGES"
+				icon={Flash}
+				iconClass="icon-jit"
+				loading={!telemetry.jit}
+				loadingText="Testing engine compilation policies..."
+			>
+				{#if telemetry.jit}
+					<div class="carbon-stat">
+						Runtime Evaluation:
+						<Tag type={telemetry.jit.dynamicEvalAllowed ? 'green' : 'red'} style="margin: 0;">
+							{telemetry.jit.dynamicEvalAllowed ? 'ALLOWED' : 'BLOCKED'}
+						</Tag>
+					</div>
+					{#if telemetry.jit.dynamicEvalAllowed}
 						<div class="carbon-stat">
-							Event Loop Scheduling Lag: <strong class="text-green"
-								>{telemetry.concurrency.eventLoopLagMs.toFixed(3)} ms</strong
-							>
+							Eval Execution Time: <strong>{telemetry.jit.evalDurationMs.toFixed(3)} ms</strong>
 						</div>
-						<div class="carbon-stat">
-							Sync Burn Capacity (20ms): <strong class="text-purple"
-								>{telemetry.concurrency.syncBurnOps.toLocaleString()} ops</strong
-							>
-						</div>
-					{:else}
-						<InlineLoading description="Evaluating microtask starvation ceilings..." />
 					{/if}
-				</Tile>
-			</Column>
+				{/if}
+			</TelemetryTile>
 
-			<Column lg={4} md={4} sm={4}>
-				<Tile class="telemetry-tile tile-bleed">
-					<div class="tile-header">
-						<h4>[06] STATE POLLUTION / MULTI-TENANCY</h4>
-						<Warning size={20} class="icon-bleed" />
+			<!-- [08] ENTROPY HARVESTING SPEED -->
+			<TelemetryTile
+				title="[08] ENTROPY HARVESTING SPEED"
+				icon={Meter}
+				iconClass="icon-entropy"
+				loading={!telemetry.entropy}
+				loadingText="Sourcing entropy seed rate..."
+			>
+				{#if telemetry.entropy}
+					<div class="carbon-stat">
+						Entropy Yield Speed: <strong class="text-purple"
+							>{telemetry.entropy.entropyGenerationRateMbSec.toFixed(2)} MB/s</strong
+						>
 					</div>
-					{#if telemetry.contextLeak}
+					<div class="carbon-stat">
+						Harvest Ingress Lag: <strong>{telemetry.entropy.durationMs.toFixed(2)} ms</strong>
+					</div>
+				{/if}
+			</TelemetryTile>
+
+			<!-- [09] EPHEMERAL DISK SUBSYSTEM -->
+			<TelemetryTile
+				title="[09] EPHEMERAL DISK SUBSYSTEM"
+				icon={DataBase}
+				iconClass="icon-disk"
+				loading={!telemetry.disk}
+				loadingText="Interrogating disk storage vectors..."
+			>
+				{#if telemetry.disk}
+					<div class="carbon-stat">
+						File System Layer:
+						<Tag type={telemetry.disk.hasDiskAccess ? 'green' : 'red'} style="margin: 0;">
+							{telemetry.disk.hasDiskAccess ? 'ACCESSIBLE' : 'SANDBOX LOCKOUT'}
+						</Tag>
+					</div>
+					{#if telemetry.disk.hasDiskAccess}
 						<div class="carbon-stat">
-							Isolate Memory Bleed:
-							<Tag
-								type={telemetry.contextLeak.contextIsPolluted ? 'red' : 'green'}
-								style="margin: 0;"
-							>
-								{telemetry.contextLeak.contextIsPolluted ? 'DIRTY HEAP CACHE' : 'PURE ISOLATE'}
-							</Tag>
+							Inferred Driver Base: <strong class="text-cyan">{telemetry.disk.diskType}</strong>
 						</div>
 						<div class="carbon-stat">
-							Current Node Tag: <span class="mono-token"
-								>{telemetry.contextLeak.currentAssignedMarker}</span
-							>
+							256KB Write Latency: <strong>{telemetry.disk.writeLatencyMs.toFixed(2)} ms</strong>
 						</div>
-					{:else}
-						<InlineLoading description="Evaluating context security maps..." />
 					{/if}
-				</Tile>
-			</Column>
+				{/if}
+			</TelemetryTile>
 
-			<Column lg={4} md={4} sm={4}>
-				<Tile class="telemetry-tile">
-					<div class="tile-header">
-						<h4>[07] ENGINE JIT PRIVILEGES</h4>
-						<Flash size={20} class="icon-jit" />
+			<!-- [10] NETWORK SURVEILLANCE MATRIX -->
+			<TelemetryTile
+				title="[10] NETWORK SURVEILLANCE MATRIX"
+				icon={View}
+				iconClass="icon-surveillance"
+				variant="surveillance"
+				loading={!telemetry.surveillance}
+				loadingText="Deconstructing header footprints..."
+			>
+				{#if telemetry.surveillance}
+					<div class="carbon-stat">
+						Leaked IP Gateway: <strong class="text-blue"
+							>{telemetry.surveillance.clientIpHeaderLeaked}</strong
+						>
 					</div>
-					{#if telemetry.jit}
-						<div class="carbon-stat">
-							Runtime Evaluation:
-							<Tag type={telemetry.jit.dynamicEvalAllowed ? 'green' : 'red'} style="margin: 0;">
-								{telemetry.jit.dynamicEvalAllowed ? 'ALLOWED' : 'BLOCKED'}
-							</Tag>
-						</div>
-						{#if telemetry.jit.dynamicEvalAllowed}
-							<div class="carbon-stat">
-								Eval Execution Time: <strong>{telemetry.jit.evalDurationMs.toFixed(3)} ms</strong>
-							</div>
-						{/if}
-					{:else}
-						<InlineLoading description="Testing engine compilation policies..." />
-					{/if}
-				</Tile>
-			</Column>
-
-			<Column lg={4} md={4} sm={4}>
-				<Tile class="telemetry-tile">
-					<div class="tile-header">
-						<h4>[08] ENTROPY HARVESTING SPEED</h4>
-						<Meter size={20} class="icon-entropy" />
+					<div class="carbon-stat">
+						Proxy Routing Path: <strong
+							>{telemetry.surveillance.proxyChainDetected ? 'MULTI-HOP' : 'DIRECT'}</strong
+						>
 					</div>
-					{#if telemetry.entropy}
-						<div class="carbon-stat">
-							Entropy Yield Speed: <strong class="text-purple"
-								>{telemetry.entropy.entropyGenerationRateMbSec.toFixed(2)} MB/s</strong
-							>
-						</div>
-						<div class="carbon-stat">
-							Harvest Ingress Lag: <strong>{telemetry.entropy.durationMs.toFixed(2)} ms</strong>
-						</div>
-					{:else}
-						<InlineLoading description="Sourcing entropy seed rate..." />
-					{/if}
-				</Tile>
-			</Column>
-
-			<Column lg={4} md={4} sm={4}>
-				<Tile class="telemetry-tile">
-					<div class="tile-header">
-						<h4>[09] EPHEMERAL DISK SUBSYSTEM</h4>
-						<DataBase size={20} class="icon-disk" />
+					<div class="carbon-stat">
+						Privacy Vector: <strong class="text-cyan"
+							>{telemetry.surveillance.anonymityScore}/100</strong
+						>
 					</div>
-					{#if telemetry.disk}
-						<div class="carbon-stat">
-							File System Layer:
-							<Tag type={telemetry.disk.hasDiskAccess ? 'green' : 'red'} style="margin: 0;">
-								{telemetry.disk.hasDiskAccess ? 'ACCESSIBLE' : 'SANDBOX LOCKOUT'}
-							</Tag>
-						</div>
-						{#if telemetry.disk.hasDiskAccess}
-							<div class="carbon-stat">
-								Inferred Driver Base: <strong class="text-cyan">{telemetry.disk.diskType}</strong>
-							</div>
-							<div class="carbon-stat">
-								256KB Write Latency: <strong>{telemetry.disk.writeLatencyMs.toFixed(2)} ms</strong>
-							</div>
-						{/if}
-					{:else}
-						<InlineLoading description="Interrogating disk storage vectors..." />
-					{/if}
-				</Tile>
-			</Column>
+				{/if}
+			</TelemetryTile>
 
-			<Column lg={4} md={4} sm={4}>
-				<Tile class="telemetry-tile tile-surveillance">
-					<div class="tile-header">
-						<h4>[10] NETWORK SURVEILLANCE MATRIX</h4>
-						<View size={20} class="icon-surveillance" />
+			<!-- [11] CLIENT DEVICE CORRELATION -->
+			<TelemetryTile
+				title="[11] CLIENT DEVICE CORRELATION"
+				icon={Laptop}
+				iconClass="icon-client"
+				variant="client"
+				loading={!telemetry.client}
+				loadingText="Gathering local device profiles..."
+			>
+				{#if telemetry.client}
+					<div class="carbon-stat">
+						Logical Thread Pool: <strong>{telemetry.client.cores} Cores</strong>
 					</div>
-					{#if telemetry.surveillance}
-						<div class="carbon-stat">
-							Leaked IP Gateway: <strong class="text-blue"
-								>{telemetry.surveillance.clientIpHeaderLeaked}</strong
-							>
-						</div>
-						<div class="carbon-stat">
-							Proxy Routing Path: <strong
-								>{telemetry.surveillance.proxyChainDetected ? 'MULTI-HOP' : 'DIRECT'}</strong
-							>
-						</div>
-						<div class="carbon-stat">
-							Privacy Vector: <strong class="text-cyan"
-								>{telemetry.surveillance.anonymityScore}/100</strong
-							>
-						</div>
-					{:else}
-						<InlineLoading description="Deconstructing header footprints..." />
-					{/if}
-				</Tile>
-			</Column>
-
-			<Column lg={4} md={4} sm={4}>
-				<Tile class="telemetry-tile tile-client">
-					<div class="tile-header">
-						<h4>[11] CLIENT DEVICE CORRELATION</h4>
-						<Laptop size={20} class="icon-client" />
+					<div class="carbon-stat">
+						Client GPU Canvas Core: <strong class="text-cyan"
+							>{telemetry.client.gpu.renderer}</strong
+						>
 					</div>
-					{#if telemetry.client}
-						<div class="carbon-stat">
-							Logical Thread Pool: <strong>{telemetry.client.cores} Cores</strong>
-						</div>
-						<div class="carbon-stat">
-							Client GPU Canvas Core: <strong class="text-cyan"
-								>{telemetry.client.gpu.renderer}</strong
-							>
-						</div>
-						<div class="carbon-stat">
-							WebGPU Support: <strong
-								>{telemetry.client.webGPU ? 'Available' : 'Unavailable'}</strong
-							>
-						</div>
-					{:else}
-						<InlineLoading description="Gathering local device profiles..." />
-					{/if}
-				</Tile>
-			</Column>
-
-			<Column lg={4} md={4} sm={4}>
-				<Tile class="telemetry-tile tile-command">
-					<div class="tile-header">
-						<h4>[12] TELEMETRY CORE CONTROLLER</h4>
-						<Play size={20} class="icon-command" />
+					<div class="carbon-stat">
+						WebGPU Support: <strong>{telemetry.client.webGPU ? 'Available' : 'Unavailable'}</strong>
 					</div>
+				{/if}
+			</TelemetryTile>
 
-					<div class="command-status-wrapper">
-						<div class="carbon-stat">
-							Pipeline State:
-							<Tag type={streamActive ? 'green' : 'red'} style="margin: 0;">
-								{streamActive ? 'STRESSING INTERROGATOR' : 'ENGINE IDLE'}
-							</Tag>
-						</div>
-						<div class="carbon-stat">
-							Gateway Ingress: <strong
-								>{networkLatency !== null ? `${networkLatency} ms` : 'UNPROBED'}</strong
-							>
-						</div>
+			<!-- [12] TELEMETRY CORE CONTROLLER -->
+			<TelemetryTile
+				title="[12] TELEMETRY CORE CONTROLLER"
+				icon={Play}
+				iconClass="icon-command"
+				variant="command"
+			>
+				<div class="command-status-wrapper">
+					<div class="carbon-stat">
+						Pipeline State:
+						<Tag type={streamActive ? 'green' : 'red'} style="margin: 0;">
+							{streamActive ? 'STRESSING INTERROGATOR' : 'ENGINE IDLE'}
+						</Tag>
 					</div>
+					<div class="carbon-stat">
+						Gateway Ingress: <strong
+							>{networkLatency !== null ? `${networkLatency} ms` : 'UNPROBED'}</strong
+						>
+					</div>
+				</div>
 
-					<Button
-						onclick={streamDiagnostics}
-						disabled={streamActive}
-						kind="secondary"
-						size="field"
-						style="width: 100%; margin-top: 1rem; justify-content: space-between;"
-					>
-						{streamActive ? 'PROBING HEAP STACK...' : 'LAUNCH ADVERSARIAL INSPECTION'}
-					</Button>
-				</Tile>
-			</Column>
+				<Button
+					onclick={streamDiagnostics}
+					disabled={streamActive}
+					kind="secondary"
+					size="field"
+					style="width: 100%; margin-top: 1rem; justify-content: space-between;"
+				>
+					{streamActive ? 'PROBING HEAP STACK...' : 'LAUNCH ADVERSARIAL INSPECTION'}
+				</Button>
+			</TelemetryTile>
 		</Row>
 
 		{#if streamHaltedUnexpectedly}
@@ -482,28 +457,19 @@
 </main>
 
 <style>
-	/* --- 1. CORE SYSTEM BACKDROP (ELEGANT LIGHTER GRAPHITE) --- */
+	/* --- 1. CORE SYSTEM BACKDROP --- */
 	.carbon-dashboard-root {
 		padding: 2.5rem 0;
 		min-height: 100vh;
-		/* Screen brightness elevated to a premium, highly legible dark graphite */
 		background-color: #1a1a20;
-
-		/* PERMANENT SCANLINE FIX: 
-           By placing the scanline gradient directly inside the background stack, 
-           it is trapped safely behind all text layers and Carbon elements.
-        */
 		background-image: linear-gradient(rgba(0, 0, 0, 0.18) 50%, transparent 50%);
 		background-size: 100% 4px;
-
 		color: var(--cds-text-primary, #f4f4f4);
 		font-family: var(--cds-font-family-mono, monospace);
 		letter-spacing: -0.01em;
 	}
 
-	/* Removed old ::after pseudo-element completely to kill text-blur bugs */
-
-	/* --- 2. HEADER MATRIX & HORIZONTAL FLEX ALIGNMENT --- */
+	/* --- 2. HEADER MATRIX --- */
 	.dashboard-title {
 		font-size: 1.35rem;
 		font-weight: 400;
@@ -514,13 +480,12 @@
 
 	.dashboard-subtitle {
 		font-size: 0.75rem;
-		color: #8d8d96; /* Brighter, text-matching contrast description */
+		color: #8d8d96;
 		max-width: 650px;
 		line-height: 1.5;
 		letter-spacing: 0.02em;
 	}
 
-	/* Enforces pristine horizontal centering alignment for header metrics */
 	:global(.header-status-column) {
 		display: flex !important;
 		align-items: center !important;
@@ -529,13 +494,12 @@
 		height: 100%;
 	}
 
-	/* Beautiful live breathing status ring */
 	.status-indicator {
 		width: 10px;
 		height: 10px;
 		border-radius: 50%;
 		position: relative;
-		flex-shrink: 0; /* Prevents layout squeezing */
+		flex-shrink: 0;
 	}
 
 	.status-indicator.streaming {
@@ -559,9 +523,8 @@
 		box-shadow: 0 0 6px var(--cds-support-error, #da1e28);
 	}
 
-	/* --- 3. THE INTERROGATOR TELEMETRY TILES --- */
+	/* --- 3. TELEMETRY TILE STYLING --- */
 	:global(.telemetry-tile) {
-		/* Adjusted layer to pop elegantly off the lighter background layout */
 		background-color: #22222a !important;
 		border: 1px solid rgba(255, 255, 255, 0.05) !important;
 		height: 100%;
@@ -582,23 +545,22 @@
 		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 	}
 
-	.tile-header {
+	:global(.tile-header) {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		/* Clean solid line layout separation instead of messy dashed matrices */
 		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 		padding-bottom: 0.75rem;
 	}
 
-	.tile-header h4 {
+	:global(.tile-header h4) {
 		font-size: 0.72rem;
 		font-weight: 500;
 		color: #a8a8a8;
 		letter-spacing: 0.08em;
 	}
 
-	/* --- 4. SEMANTIC LAYOUT HIGHLIGHT PINS --- */
+	/* --- 4. SEMANTIC VARIANT PINS --- */
 	:global(.tile-bleed) {
 		border-left: 2px solid var(--cds-support-warning, #f1c21b) !important;
 	}
@@ -609,13 +571,13 @@
 		border-left: 2px solid var(--cds-support-info, #0043ce) !important;
 	}
 
-	/* --- 5. COMPONENT ELEMENT STYLING --- */
+	/* --- 5. STATS & TOKENS --- */
 	.carbon-stat {
 		display: flex;
 		justify-content: space-between;
 		align-items: flex-start;
 		font-size: 0.82rem;
-		color: #a8a8af; /* Boosted visibility for stat labels */
+		color: #a8a8af;
 		padding: 0.35rem 0;
 		gap: 1rem;
 	}
@@ -639,7 +601,7 @@
 		color: #8d8d8d;
 	}
 
-	/* Tech Glow Accents */
+	/* --- 6. ACCENT ICONS & TEXT COLORS --- */
 	:global(.icon-server) {
 		color: #8d8d8d;
 	}
@@ -679,7 +641,6 @@
 		filter: drop-shadow(0 0 2px rgba(69, 137, 255, 0.2));
 	}
 
-	/* --- 6. UTILITY MATRIX COLORS --- */
 	:global(.text-green) {
 		color: #42be65 !important;
 	}
@@ -696,7 +657,7 @@
 		color: #78a9ff !important;
 	}
 
-	/* --- 7. RADAR INTERNET MONITOR ANIMATION --- */
+	/* --- 7. RADAR MONITOR ANIMATION --- */
 	@keyframes radar-pulse {
 		0% {
 			transform: scale(0.9);

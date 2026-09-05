@@ -17,19 +17,12 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v7
 
-      - name: Install pnpm Package Manager
-        uses: pnpm/action-setup@v6
+      - name: Setup pnpm and Node.js 26 Environment
+        uses: pnpm/setup@v2
         with:
           version: 11
-
-      - name: Initialize Node.js Environment
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - name: Materialize Dependencies
-        run: pnpm install --frozen-lockfile
+          runtime: node@26
+          cache: true
 
       - name: Static Code Analysis (Lint & Formatting)
         run: pnpm lint
@@ -48,25 +41,18 @@ jobs:
     strategy:
       fail-fast: false # Infrastructure concept: Don't kill other deployments if one vendor flakes
       matrix:
-        target: [Cloudflare, Vercel, Netlify]
+        target: [Cloudflare, Vercel]
 
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v7
 
-      - name: Install pnpm Package Manager
-        uses: pnpm/action-setup@v6
+      - name: Setup pnpm and Node.js 26 Environment
+        uses: pnpm/setup@v2
         with:
           version: 11
-
-      - name: Initialize Node.js Environment
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: 'pnpm'
-
-      - name: Materialize Dependencies
-        run: pnpm install --frozen-lockfile
+          runtime: node@26
+          cache: true
 
       # ---------------------------------------------------
       # TARGET MATRIX SLICE: CLOUDFLARE
@@ -96,15 +82,3 @@ jobs:
           pnpm build:vercel
           # Bundle and deploy the locally compiled output folder
           pnpm dlx vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
-
-      # ---------------------------------------------------
-      # TARGET MATRIX SLICE: NETLIFY
-      # ---------------------------------------------------
-      - name: Execute Netlify Build & Deployment Loop
-        if: matrix.target == 'Netlify'
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        run: |
-          pnpm build:netlify
-          pnpm dlx netlify deploy --prod --site="$NETLIFY_SITE_ID" --auth="$NETLIFY_AUTH_TOKEN"

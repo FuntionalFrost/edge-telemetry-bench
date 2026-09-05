@@ -271,10 +271,16 @@ export const GET: RequestHandler = async ({ request }) => {
 			try {
 				const headers = request.headers;
 				const clientIp =
-					headers.get('x-forwarded-for') || headers.get('true-client-ip') || 'Direct Loopback';
+					headers.get('cf-connecting-ip') ||
+					headers.get('x-real-ip') ||
+					headers.get('x-forwarded-for') ||
+					headers.get('true-client-ip') ||
+					'Direct Loopback';
 				const hasProxyHeaders =
 					headers.has('via') ||
 					headers.has('forwarded') ||
+					headers.has('cf-ray') ||
+					headers.has('x-vercel-id') ||
 					(headers.get('x-forwarded-for')?.split(',') ?? []).length > 1;
 
 				let baseAnonymity = 100;
