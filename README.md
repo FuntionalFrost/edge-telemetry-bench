@@ -85,8 +85,11 @@ Target-specific builds are controlled via the `DEPLOY_TARGET` environment variab
 # Cloudflare Workers build (outputs to .svelte-kit/cloudflare)
 pnpm build:cloudflare
 
-# Vercel Edge build (outputs to .vercel/output)
+# Vercel Edge build (outputs to .vercel/output with edge runtime)
 pnpm build:vercel
+
+# Vercel Node.js Serverless build (outputs to .vercel/output with Node 22 serverless)
+pnpm build:vercel:node
 
 # Generic / Preview build
 pnpm build
@@ -109,14 +112,18 @@ Deploying `edge-telemetry-bench` is zero-config via direct Git integration with 
    - **Build output directory**: `.svelte-kit/cloudflare`
 4. Click **Save and Deploy**.
 
-### 2. Vercel Edge
+### 2. Vercel (Edge vs. Node.js Serverless)
 
 1. Go to [Vercel Dashboard](https://vercel.com/new) and import your repository.
-2. Configure build settings:
+2. Under **Build & Development Settings**:
    - **Framework Preset**: `SvelteKit`
-   - **Build command**: `pnpm build:vercel`
-   - **Environment Variable**: `DEPLOY_TARGET=vercel`
-3. Click **Deploy**. Vercel will deploy your edge instance with instant preview URLs on PRs.
+   - **Build Command**:
+     - For **Vercel Edge**: `pnpm build:vercel`
+     - For **Vercel Node.js Serverless (Non-Edge)**: `pnpm build:vercel:node`
+3. Under **Environment Variables**, add:
+   - `DEPLOY_TARGET` = `vercel`
+   - _(Optional for Node.js)_ `VERCEL_RUNTIME` = `nodejs22.x`
+4. Click **Deploy**.
 
 ---
 

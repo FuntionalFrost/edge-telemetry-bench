@@ -1,7 +1,7 @@
 import type { Adapter } from '@sveltejs/kit';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
-import { optimizeCss, optimizeImports } from 'carbon-preprocess-svelte';
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
 import adapterCloudflare from '@sveltejs/adapter-cloudflare';
@@ -17,21 +17,11 @@ const selectedAdapter: Adapter =
 
 export default defineConfig({
 	plugins: [
+		tailwindcss(),
 		sveltekit({
-			compilerOptions: {
-				// Force runes mode for the project, except for libraries. Can be removed in svelte 6.
-				runes: ({ filename }) =>
-					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
-			},
-
-			preprocess: [
-				vitePreprocess(), // Transpiles TS into safe vanilla primitives first
-				optimizeImports() // Rewrites barrel imports to lean, direct component source paths
-			],
+			preprocess: [vitePreprocess()],
 			adapter: selectedAdapter,
 			files: { assets: 'static' }
-		}),
-
-		optimizeCss()
+		})
 	]
 });
