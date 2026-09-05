@@ -4,6 +4,10 @@
 	"description": "Adversarial benchmarking suite and real-time telemetry interrogator for serverless JS isolates and edge runtimes",
 	"license": "MIT",
 	"type": "module",
+	"packageManager": "pnpm@11.24.0",
+	"engines": {
+		"node": ">=24"
+	},
 	"keywords": [
 		"sveltekit",
 		"svelte5",

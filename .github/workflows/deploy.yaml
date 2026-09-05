@@ -1,4 +1,4 @@
-name: Multi-Platform Deployment Pipeline
+name: Continuous Integration
 
 on:
   push:
@@ -7,17 +7,14 @@ on:
     branches: [main]
 
 jobs:
-  # =========================================================
-  # STAGE 1: Continuous Integration (Quality & Compilability)
-  # =========================================================
   ci:
-    name: Continuous Integration
+    name: Code Quality & Type Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v7
 
-      - name: Setup pnpm and Node.js 26 Environment
+      - name: Setup pnpm and Node.js 26
         uses: pnpm/setup@v2
         with:
           version: 11
@@ -29,56 +26,3 @@ jobs:
 
       - name: Type Check Project Verification
         run: pnpm check
-
-  # =========================================================
-  # STAGE 2: Continuous Deployment (Parallel Cloud Delivery)
-  # =========================================================
-  cd:
-    name: Deploy to ${{ matrix.target }}
-    needs: ci
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false # Infrastructure concept: Don't kill other deployments if one vendor flakes
-      matrix:
-        target: [Cloudflare, Vercel]
-
-    steps:
-      - name: Checkout Source Code
-        uses: actions/checkout@v7
-
-      - name: Setup pnpm and Node.js 26 Environment
-        uses: pnpm/setup@v2
-        with:
-          version: 11
-          runtime: node@26
-          cache: true
-
-      # ---------------------------------------------------
-      # TARGET MATRIX SLICE: CLOUDFLARE
-      # ---------------------------------------------------
-      - name: Execute Cloudflare Build & Deployment Loop
-        if: matrix.target == 'Cloudflare'
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          pnpm wrangler types
-          pnpm build:cloudflare
-          pnpm wrangler deploy
-
-      # ---------------------------------------------------
-      # TARGET MATRIX SLICE: VERCEL
-      # ---------------------------------------------------
-      - name: Execute Vercel Build & Deployment Loop
-        if: matrix.target == 'Vercel'
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          pnpm dlx vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-          # Build locally on the runner using the configuration we prepared
-          pnpm build:vercel
-          # Bundle and deploy the locally compiled output folder
-          pnpm dlx vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN

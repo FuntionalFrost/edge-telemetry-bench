@@ -95,24 +95,37 @@ pnpm preview
 
 ---
 
-## CI/CD Deployment
+## Deployment (Native Git Integration)
 
-The repository includes a modern GitHub Actions pipeline ([`.github/workflows/deploy.yaml`](.github/workflows/deploy.yaml)) powered by [`pnpm/setup`](https://github.com/pnpm/setup) with native Node.js 26 caching and parallel edge deployments.
+Deploying `edge-telemetry-bench` is zero-config via direct Git integration with Cloudflare and Vercel:
 
-### Required GitHub Secrets
+### 1. Cloudflare Workers / Pages
 
-To enable automatic multi-cloud deployment on push to `main`:
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/) $\rightarrow$ **Workers & Pages** $\rightarrow$ **Create** $\rightarrow$ **Connect to Git**.
+2. Select your repository.
+3. Configure build settings:
+   - **Framework Preset**: `SvelteKit`
+   - **Build command**: `pnpm build:cloudflare`
+   - **Build output directory**: `.svelte-kit/cloudflare`
+4. Click **Save and Deploy**.
 
-#### For Cloudflare Workers:
+### 2. Vercel Edge
 
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
+1. Go to [Vercel Dashboard](https://vercel.com/new) and import your repository.
+2. Configure build settings:
+   - **Framework Preset**: `SvelteKit`
+   - **Build command**: `pnpm build:vercel`
+   - **Environment Variable**: `DEPLOY_TARGET=vercel`
+3. Click **Deploy**. Vercel will deploy your edge instance with instant preview URLs on PRs.
 
-#### For Vercel:
+---
 
-- `VERCEL_TOKEN`
-- `VERCEL_ORG_ID`
-- `VERCEL_PROJECT_ID`
+## Continuous Integration (CI)
+
+A lightweight GitHub Actions pipeline ([`.github/workflows/deploy.yaml`](.github/workflows/deploy.yaml)) automatically runs on every push and pull request to verify code quality and type correctness using [`pnpm/setup`](https://github.com/pnpm/setup) with Node.js 26:
+
+- `pnpm lint`: Code style and ESLint validation
+- `pnpm check`: Svelte 5 and TypeScript type diagnostics
 
 ---
 
