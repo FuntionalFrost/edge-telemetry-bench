@@ -15,7 +15,7 @@
 
 ## Overview
 
-**`edge-telemetry-bench`** is a high-precision diagnostic and adversarial inspection tool built with **SvelteKit** and the **Carbon Design System**. It stress-tests and interrogates edge execution environments (such as Cloudflare Workers, Vercel Edge Functions, AWS Lambda@Edge, and Deno Deploy) to measure runtime boundaries, side-channel timing limits, state isolation, and security controls in real time over an asynchronous NDJSON stream.
+**`edge-telemetry-bench`** is a high-precision diagnostic and adversarial inspection tool built with **SvelteKit**, **Tailwind CSS v4**, and **`@lucide/svelte`**. It stress-tests and interrogates edge execution environments (such as Cloudflare Workers, Vercel Edge Functions, AWS Lambda@Edge, and Deno Deploy) to measure runtime boundaries, side-channel timing limits, state isolation, and security controls in real time over an asynchronous NDJSON stream.
 
 By executing synthetic workloads, memory probes, and platform fingerprinting inside the server isolate and browser client, `edge-telemetry-bench` surfaces critical metrics regarding multi-tenant security, JIT privileges, hardware exposure, and network egress capabilities.
 
@@ -44,10 +44,10 @@ The dashboard continuously streams and analyzes 11 core vectors across server is
 ## Tech Stack
 
 - **Framework:** [SvelteKit](https://kit.svelte.dev/) (Svelte 5 Runes API)
-- **UI Design System:** [Carbon Components Svelte](https://github.com/carbon-design-system/carbon-components-svelte)
-- **Icons:** [Carbon Icons Svelte](https://github.com/carbon-design-system/carbon-icons-svelte)
+- **Styling & CSS:** [Tailwind CSS v4](https://tailwindcss.com/) with CRT scanline aesthetics
+- **UI Architecture:** Bespoke Svelte 5 Micro-Components (Zero-dependency UI)
+- **Icons:** [@lucide/svelte](https://lucide.dev/) (Tree-shakeable inline SVG icons)
 - **Validation & Schemas:** [Zod](https://zod.dev/) v4
-- **Styling:** Custom Carbon dark graphite theme (`g100`) with CRT scanline aesthetics
 - **Supported Deploy Targets:** Cloudflare Workers (`workerd`), Vercel Edge Functions, Vercel Serverless
 
 ---

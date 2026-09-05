@@ -18,7 +18,9 @@
 		"benchmark",
 		"spectre",
 		"webassembly",
-		"carbon-design-system"
+		"tailwindcss",
+		"lucide",
+		"security"
 	],
 	"scripts": {
 		"dev": "vite dev",
