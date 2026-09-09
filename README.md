@@ -8,14 +8,13 @@
 [![Svelte 5](https://img.shields.io/badge/Svelte-5%20Runes-FF3E00.svg)](https://svelte.dev/)
 [![Node.js](https://img.shields.io/badge/Node.js-26-339933.svg)](https://nodejs.org/)
 [![pnpm](https://img.shields.io/badge/pnpm-11-F69220.svg)](https://pnpm.io/)
-[![Cloudflare Workers](https://img.shields.io/badge/Deploy-Cloudflare%20Workers-F38020.svg)](https://workers.cloudflare.com/)
-[![Vercel Edge](https://img.shields.io/badge/Deploy-Vercel%20Edge-000000.svg)](https://vercel.com/)
+[![Vercel](https://img.shields.io/badge/Deploy-Vercel-000000.svg)](https://vercel.com/)
 
 ---
 
 ## Overview
 
-**`edge-telemetry-bench`** is a high-precision diagnostic and adversarial inspection tool built with **SvelteKit**, **Tailwind CSS v4**, and **`@lucide/svelte`**. It stress-tests and interrogates edge execution environments (such as Cloudflare Workers, Vercel Edge Functions, AWS Lambda@Edge, and Deno Deploy) to measure runtime boundaries, side-channel timing limits, state isolation, and security controls in real time over an asynchronous NDJSON stream.
+**`edge-telemetry-bench`** is a high-precision diagnostic and adversarial inspection tool built with **SvelteKit**, **Tailwind CSS v4**, and **`@lucide/svelte`**. It stress-tests and interrogates edge execution environments (such as Vercel Edge Functions, AWS Lambda@Edge, and Cloudflare Isolates) to measure runtime boundaries, side-channel timing limits, state isolation, and security controls in real time over an asynchronous NDJSON stream.
 
 By executing synthetic workloads, memory probes, and platform fingerprinting inside the server isolate and browser client, `edge-telemetry-bench` surfaces critical metrics regarding multi-tenant security, JIT privileges, hardware exposure, and network egress capabilities.
 
@@ -44,11 +43,12 @@ The dashboard continuously streams and analyzes 11 core vectors across server is
 ## Tech Stack
 
 - **Framework:** [SvelteKit](https://kit.svelte.dev/) (Svelte 5 Runes API)
+- **Adapter:** [@sveltejs/adapter-vercel](https://github.com/sveltejs/kit/tree/main/packages/adapter-vercel) (Vercel Serverless & Edge Functions)
 - **Styling & CSS:** [Tailwind CSS v4](https://tailwindcss.com/) with CRT scanline aesthetics
 - **UI Architecture:** Bespoke Svelte 5 Micro-Components (Zero-dependency UI)
 - **Icons:** [@lucide/svelte](https://lucide.dev/) (Tree-shakeable inline SVG icons)
 - **Validation & Schemas:** [Zod](https://zod.dev/) v4
-- **Supported Deploy Targets:** Cloudflare Workers (`workerd`), Vercel Edge Functions, Vercel Serverless
+- **Deployment Platform:** [Vercel](https://vercel.com/) (Edge Functions & Node.js Serverless Functions)
 
 ---
 
@@ -56,7 +56,7 @@ The dashboard continuously streams and analyzes 11 core vectors across server is
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v24 or v26
+- [Node.js](https://nodejs.org/) v20, v22, v24, or v26
 - [pnpm](https://pnpm.io/) v11 (`corepack enable pnpm` or `npm install -g pnpm`)
 
 ### Installation
@@ -79,50 +79,35 @@ Open `http://localhost:5173` to view the live dashboard.
 
 ## Building for Production
 
-Target-specific builds are controlled via the `DEPLOY_TARGET` environment variable:
+Builds use `@sveltejs/adapter-vercel` and output directly to `.vercel/output`:
 
 ```bash
-# Cloudflare Workers build (outputs to .svelte-kit/cloudflare)
-pnpm build:cloudflare
-
-# Vercel Edge build (outputs to .vercel/output with edge runtime)
-pnpm build:vercel
-
-# Vercel Node.js Serverless build (outputs to .vercel/output with Node 22 serverless)
-pnpm build:vercel:node
-
-# Generic / Preview build
+# Standard production build (Node.js serverless runtime)
 pnpm build
+
+# Vercel Edge build (Edge Function runtime)
+pnpm build:edge
+
+# Vercel Node.js 22.x Serverless build
+pnpm build:node
+
+# Local preview of the build
 pnpm preview
 ```
 
 ---
 
-## Deployment (Native Git Integration)
+## Deployment (Vercel)
 
-Deploying `edge-telemetry-bench` is zero-config via direct Git integration with Cloudflare and Vercel:
-
-### 1. Cloudflare Workers / Pages
-
-1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/) $\rightarrow$ **Workers & Pages** $\rightarrow$ **Create** $\rightarrow$ **Connect to Git**.
-2. Select your repository.
-3. Configure build settings:
-   - **Framework Preset**: `SvelteKit`
-   - **Build command**: `pnpm build:cloudflare`
-   - **Build output directory**: `.svelte-kit/cloudflare`
-4. Click **Save and Deploy**.
-
-### 2. Vercel (Edge vs. Node.js Serverless)
+Deploying `edge-telemetry-bench` is zero-config via direct Git integration with Vercel:
 
 1. Go to [Vercel Dashboard](https://vercel.com/new) and import your repository.
-2. Under **Build & Development Settings**:
+2. Vercel automatically detects **SvelteKit** and configures the build settings:
    - **Framework Preset**: `SvelteKit`
-   - **Build Command**:
-     - For **Vercel Edge**: `pnpm build:vercel`
-     - For **Vercel Node.js Serverless (Non-Edge)**: `pnpm build:vercel:node`
-3. Under **Environment Variables**, add:
-   - `DEPLOY_TARGET` = `vercel`
-   - _(Optional for Node.js)_ `VERCEL_RUNTIME` = `nodejs22.x`
+   - **Build Command**: `pnpm build`
+   - **Output Directory**: Automatically handled by `@sveltejs/adapter-vercel`
+3. _(Optional)_ Under **Environment Variables**, set:
+   - `VERCEL_RUNTIME` = `edge` (for Edge Functions) or `nodejs22.x` (for Node.js Serverless)
 4. Click **Deploy**.
 
 ---
@@ -133,6 +118,7 @@ A lightweight GitHub Actions pipeline ([`.github/workflows/ci.yml`](.github/work
 
 - `pnpm lint`: Code style and ESLint validation
 - `pnpm check`: Svelte 5 and TypeScript type diagnostics
+- `pnpm build`: Production build bundle verification
 
 ---
 
@@ -149,7 +135,7 @@ Contributions, issue reports, and PRs are welcome!
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-vector`)
 3. Commit your changes (`git commit -m 'Add new telemetry vector'`)
-4. Verify tests and linting (`pnpm check && pnpm lint`)
+4. Verify tests and linting (`pnpm check && pnpm lint && pnpm build`)
 5. Push to the branch (`git push origin feature/amazing-vector`)
 6. Open a Pull Request
 

@@ -11,8 +11,9 @@
 	"keywords": [
 		"sveltekit",
 		"svelte5",
-		"cloudflare-workers",
+		"vercel",
 		"vercel-edge",
+		"vercel-serverless",
 		"isolate",
 		"telemetry",
 		"benchmark",
@@ -25,9 +26,8 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
-		"build:cloudflare": "cross-env DEPLOY_TARGET=cloudflare vite build",
-		"build:vercel": "cross-env DEPLOY_TARGET=vercel vite build",
-		"build:vercel:node": "cross-env DEPLOY_TARGET=vercel VERCEL_RUNTIME=nodejs22.x vite build",
+		"build:edge": "cross-env VERCEL_RUNTIME=edge vite build",
+		"build:node": "cross-env VERCEL_RUNTIME=nodejs22.x vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -38,8 +38,7 @@
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
 		"@lucide/svelte": "^1.41.0",
-		"@sveltejs/adapter-cloudflare": "^7.2.9",
-		"@sveltejs/adapter-vercel": "^6.3.4",
+		"@sveltejs/adapter-vercel": "^6.3.3",
 		"@sveltejs/kit": "^2.70.3",
 		"@sveltejs/vite-plugin-svelte": "^7.3.0",
 		"@tailwindcss/vite": "^4.3.3",
@@ -56,8 +55,7 @@
 		"tailwindcss": "^4.3.3",
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.69.0",
-		"vite": "^8.2.2",
-		"wrangler": "^4.129.0"
+		"vite": "^8.2.2"
 	},
 	"dependencies": {
 		"zod": "^4.5.4"
