@@ -9,11 +9,7 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit({
 			preprocess: vitePreprocess(),
-			adapter: adapter({
-				runtime:
-					(process.env.VERCEL_RUNTIME as 'edge' | 'nodejs20.x' | 'nodejs22.x' | 'nodejs24.x') ||
-					'nodejs22.x'
-			})
+			adapter: adapter()
 		})
 	]
 });

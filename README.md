@@ -56,7 +56,7 @@ The dashboard continuously streams and analyzes 11 core vectors across server is
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v20, v22, v24, or v26
+- [Node.js](https://nodejs.org/) v24 or v26
 - [pnpm](https://pnpm.io/) v11 (`corepack enable pnpm` or `npm install -g pnpm`)
 
 ### Installation
@@ -82,14 +82,8 @@ Open `http://localhost:5173` to view the live dashboard.
 Builds use `@sveltejs/adapter-vercel` and output directly to `.vercel/output`:
 
 ```bash
-# Standard production build (Node.js serverless runtime)
+# Standard production build for Vercel
 pnpm build
-
-# Vercel Edge build (Edge Function runtime)
-pnpm build:edge
-
-# Vercel Node.js 22.x Serverless build
-pnpm build:node
 
 # Local preview of the build
 pnpm preview
@@ -106,9 +100,7 @@ Deploying `edge-telemetry-bench` is zero-config via direct Git integration with 
    - **Framework Preset**: `SvelteKit`
    - **Build Command**: `pnpm build`
    - **Output Directory**: Automatically handled by `@sveltejs/adapter-vercel`
-3. _(Optional)_ Under **Environment Variables**, set:
-   - `VERCEL_RUNTIME` = `edge` (for Edge Functions) or `nodejs22.x` (for Node.js Serverless)
-4. Click **Deploy**.
+3. Click **Deploy**.
 
 ---
 
