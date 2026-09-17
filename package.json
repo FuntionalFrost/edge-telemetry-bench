@@ -43,6 +43,7 @@
 		"@sveltejs/adapter-vercel": "^6.3.3",
 		"@sveltejs/kit": "^2.70.3",
 		"@sveltejs/vite-plugin-svelte": "^7.3.0",
+		"@tailwindcss/typography": "^0.5.20",
 		"@tailwindcss/vite": "^4.3.3",
 		"@types/node": "^26.5.1",
 		"eslint": "^10.10.0",
@@ -60,6 +61,7 @@
 	},
 	"dependencies": {
 		"tailwind-variants": "^3.3.1",
+		"yaxa-svelte": "^1.10.0",
 		"zod": "^4.6.5"
 	}
 }

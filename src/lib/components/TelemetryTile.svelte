@@ -1,5 +1,5 @@
 <script module lang="ts">
-	import { tv, type VariantProps } from 'tailwind-variants';
+	import { tv, type VariantProps } from 'yaxa-svelte';
 
 	export const telemetryTileVariants = tv({
 		base: 'group relative flex flex-col justify-between rounded-lg border bg-zinc-900/60 p-5 shadow-lg backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-black/60',

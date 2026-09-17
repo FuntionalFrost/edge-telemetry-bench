@@ -6,3 +6,6 @@ allowBuilds:
   esbuild: true
   sharp: true
   workerd: true
+
+minimumReleaseAgeExclude:
+  - yaxa-svelte@1.10.0
