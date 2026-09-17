@@ -1,126 +1,33 @@
 <script lang="ts">
-	import { gatherClientMetrics } from '$lib/client/hardware';
+	import { telemetryEngine } from '$lib/client/telemetry.svelte';
 	import Badge from '$lib/components/Badge.svelte';
+	import MetricRow from '$lib/components/MetricRow.svelte';
 	import TelemetryTile from '$lib/components/TelemetryTile.svelte';
-	import type {
-		ClientHardwareMetrics,
-		ClockChunk,
-		ConcurrencyChunk,
-		ContextLeakChunk,
-		EgressChunk,
-		EntropyChunk,
-		EphemeralDiskChunk,
-		IdentityChunk,
-		JitChunk,
-		MemoryChunk,
-		SurveillanceChunk,
-		WasmChunk
-	} from '$lib/types';
-	import { diagnosticStreamChunkSchema } from '$lib/types';
 	import {
-		TriangleAlert,
+		Activity,
+		Boxes,
+		Cloud,
 		CodeXml,
 		Cpu,
 		Eye,
 		Gauge,
+		Globe,
 		HardDrive,
+		KeyRound,
 		Laptop,
 		Network,
 		Play,
+		Shield,
 		ShieldAlert,
 		Terminal,
 		Timer,
+		TriangleAlert,
 		Zap
 	} from '@lucide/svelte';
 	import { onMount } from 'svelte';
 
-	// Reactive Telemetry Matrix State
-	let telemetry = $state<{
-		identity: IdentityChunk | null;
-		clock: ClockChunk | null;
-		wasm: WasmChunk | null;
-		memory: MemoryChunk | null;
-		egress: EgressChunk | null;
-		concurrency: ConcurrencyChunk | null;
-		contextLeak: ContextLeakChunk | null;
-		jit: JitChunk | null;
-		entropy: EntropyChunk | null;
-		disk: EphemeralDiskChunk | null;
-		surveillance: SurveillanceChunk | null;
-		client: ClientHardwareMetrics | null;
-	}>({
-		identity: null,
-		clock: null,
-		wasm: null,
-		memory: null,
-		egress: null,
-		concurrency: null,
-		contextLeak: null,
-		jit: null,
-		entropy: null,
-		disk: null,
-		surveillance: null,
-		client: null
-	});
-
-	let streamActive = $state(false);
-	let streamHaltedUnexpectedly = $state(false);
-	let networkLatency = $state<number | null>(null);
-
-	async function streamDiagnostics() {
-		streamActive = true;
-		streamHaltedUnexpectedly = false;
-		const startTime = performance.now();
-
-		try {
-			const response = await fetch('/api/diagnostics');
-			if (!response.body) return;
-			networkLatency = Math.round(performance.now() - startTime);
-
-			const reader = response.body.getReader();
-			const decoder = new TextDecoder();
-			let buffer = '';
-
-			while (true) {
-				const { value, done } = await reader.read();
-				if (done) break;
-
-				buffer += decoder.decode(value, { stream: true });
-				const lines = buffer.split('\n');
-				buffer = lines.pop() || '';
-
-				for (const line of lines) {
-					if (!line.trim()) continue;
-
-					const rawJson = JSON.parse(line);
-					const result = diagnosticStreamChunkSchema.safeParse(rawJson);
-
-					if (!result.success) continue;
-					const chunk = result.data;
-
-					if (chunk.type === 'panic') {
-						throw new Error(chunk.data.message);
-					}
-
-					const targetKey = chunk.type as Exclude<typeof chunk.type, 'panic'>;
-					(telemetry as Record<typeof targetKey, typeof chunk.data>)[targetKey] = chunk.data;
-				}
-			}
-		} catch (e) {
-			console.error('Telemetry Interruption Matrix:', e);
-			streamHaltedUnexpectedly = true;
-		} finally {
-			streamActive = false;
-		}
-	}
-
-	onMount(async () => {
-		telemetry.client = await gatherClientMetrics();
-		await streamDiagnostics();
-	});
-
-	$effect(() => {
-		void JSON.stringify(telemetry);
+	onMount(() => {
+		void telemetryEngine.launch();
 	});
 </script>
 
@@ -141,20 +48,25 @@
 					</h1>
 				</div>
 				<p class="mt-1 text-xs text-zinc-400 font-mono tracking-wide">
-					Real-time sandboxed telemetry stream, platform signature, and user tracking correlation.
+					Adversarial benchmarking, side-channel timing limits, and client privacy correlation
+					matrix.
 				</p>
 			</div>
 
 			<div class="flex items-center gap-3 self-start sm:self-auto">
-				{#if networkLatency !== null}
+				{#if telemetryEngine.networkLatency !== null}
 					<Badge variant="cyan" class="font-mono">
-						INGRESS RTT: {networkLatency}ms
+						INGRESS RTT: {telemetryEngine.networkLatency}ms
 					</Badge>
 				{/if}
 
+				<Badge variant={telemetryEngine.streamActive ? 'emerald' : 'zinc'} class="font-mono">
+					ACTIVE VECTORS: {telemetryEngine.activeVectorCount}/18
+				</Badge>
+
 				<div class="relative flex items-center justify-center p-1">
 					<span
-						class="size-2.5 rounded-full transition-colors {streamActive
+						class="size-2.5 rounded-full transition-colors {telemetryEngine.streamActive
 							? 'bg-emerald-500 shadow-[0_0_10px_#10b981] radar-live'
 							: 'bg-rose-500 shadow-[0_0_6px_#f43f5e]'}"
 					></span>
@@ -162,328 +74,533 @@
 			</div>
 		</header>
 
-		<!-- Telemetry Grid -->
-		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+		<!-- Telemetry Matrix Grid (18 Probes + Client Matrix + Core Controller) -->
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 			<!-- [01] SERVER ISOLATE ENVIRONMENT -->
 			<TelemetryTile
-				title="[01] Server Isolate Environment"
+				title="[01] Server Isolate Base"
 				icon={Terminal}
 				iconClass="text-zinc-400"
-				loading={!telemetry.identity}
-				loadingText="Awaiting stream connection..."
+				loading={!telemetryEngine.telemetry.identity}
 			>
-				{#if telemetry.identity}
-					<div class="flex justify-between py-0.5">
-						<span>Uptime:</span>
-						<strong class="text-white">{telemetry.identity.uptimeMs.toFixed(1)} ms</strong>
-					</div>
-					<div class="flex justify-between py-0.5">
-						<span>Activations:</span>
-						<strong class="text-emerald-400">{telemetry.identity.activations}</strong>
-					</div>
-					<div class="flex justify-between py-0.5">
-						<span>Global Context:</span>
-						<strong class="text-white">{telemetry.identity.globalKeysCount} primitives</strong>
-					</div>
+				{#if telemetryEngine.telemetry.identity}
+					<MetricRow
+						label="Uptime"
+						value="{telemetryEngine.telemetry.identity.uptimeMs.toFixed(1)} ms"
+					/>
+					<MetricRow
+						label="Activations"
+						value={telemetryEngine.telemetry.identity.activations}
+						valueClass="text-emerald-400"
+					/>
+					<MetricRow
+						label="Global Scope"
+						value="{telemetryEngine.telemetry.identity.globalKeysCount} primitives"
+					/>
 				{/if}
 			</TelemetryTile>
 
-			<!-- [02] SIDE-CHANNEL CLOCK RESOLUTION -->
+			<!-- [02] CLOUD HYPERVISOR & REGION -->
 			<TelemetryTile
-				title="[02] Side-Channel Clock Resolution"
+				title="[02] Cloud Platform & Region"
+				icon={Cloud}
+				iconClass="text-sky-400"
+				loading={!telemetryEngine.telemetry.cloudMetadata}
+			>
+				{#if telemetryEngine.telemetry.cloudMetadata}
+					<MetricRow
+						label="Platform"
+						value={telemetryEngine.telemetry.cloudMetadata.platform}
+						valueClass="text-sky-400 truncate max-w-36"
+					/>
+					<MetricRow
+						label="Region"
+						value={telemetryEngine.telemetry.cloudMetadata.region}
+						valueClass="text-emerald-400"
+					/>
+					<MetricRow
+						label="Arch / Engine"
+						value={telemetryEngine.telemetry.cloudMetadata.architecture}
+						valueClass="text-zinc-300 truncate max-w-36"
+					/>
+				{/if}
+			</TelemetryTile>
+
+			<!-- [03] ISOLATE LIFECYCLE & COLD START -->
+			<TelemetryTile
+				title="[03] Lifecycle & Heap Delta"
+				icon={Activity}
+				iconClass="text-teal-400"
+				loading={!telemetryEngine.telemetry.isolateLifecycle}
+			>
+				{#if telemetryEngine.telemetry.isolateLifecycle}
+					<MetricRow label="Execution State">
+						<Badge
+							variant={telemetryEngine.telemetry.isolateLifecycle.isColdStart
+								? 'purple'
+								: 'emerald'}
+						>
+							{telemetryEngine.telemetry.isolateLifecycle.isColdStart
+								? 'COLD BOOT'
+								: 'WARM ISOLATE'}
+						</Badge>
+					</MetricRow>
+					<MetricRow
+						label="Heap Allocated"
+						value="{telemetryEngine.telemetry.isolateLifecycle.heapUsedMb} / {telemetryEngine
+							.telemetry.isolateLifecycle.heapTotalMb} MB"
+						valueClass="text-teal-300"
+					/>
+					<MetricRow
+						label="Instance Tag"
+						value={telemetryEngine.telemetry.isolateLifecycle.instanceId.slice(0, 14)}
+						valueClass="text-zinc-400"
+					/>
+				{/if}
+			</TelemetryTile>
+
+			<!-- [04] SPECTRE ATTACK SURFACE -->
+			<TelemetryTile
+				title="[04] Spectre Side-Channels"
+				icon={Shield}
+				iconClass="text-rose-400"
+				loading={!telemetryEngine.telemetry.spectrePrimitives}
+			>
+				{#if telemetryEngine.telemetry.spectrePrimitives}
+					<MetricRow label="Attack Surface">
+						<Badge
+							variant={telemetryEngine.telemetry.spectrePrimitives.vulnerabilityProfile ===
+							'Hardened'
+								? 'emerald'
+								: telemetryEngine.telemetry.spectrePrimitives.vulnerabilityProfile ===
+									  'Elevated Risk'
+									? 'rose'
+									: 'amber'}
+						>
+							{telemetryEngine.telemetry.spectrePrimitives.vulnerabilityProfile}
+						</Badge>
+					</MetricRow>
+					<MetricRow
+						label="SharedArrayBuffer"
+						value={telemetryEngine.telemetry.spectrePrimitives.hasSharedArrayBuffer
+							? 'Exposed'
+							: 'Protected'}
+						valueClass={telemetryEngine.telemetry.spectrePrimitives.hasSharedArrayBuffer
+							? 'text-rose-400'
+							: 'text-emerald-400'}
+					/>
+					<MetricRow
+						label="WASM SIMD128"
+						value={telemetryEngine.telemetry.spectrePrimitives.hasWasmSimd ? 'Active' : 'Disabled'}
+						valueClass={telemetryEngine.telemetry.spectrePrimitives.hasWasmSimd
+							? 'text-cyan-400'
+							: 'text-zinc-500'}
+					/>
+				{/if}
+			</TelemetryTile>
+
+			<!-- [05] SIDE-CHANNEL CLOCK RESOLUTION -->
+			<TelemetryTile
+				title="[05] Clock Resolution & Jitter"
 				icon={Timer}
 				iconClass="text-cyan-400"
-				loading={!telemetry.clock}
-				loadingText="Probing timing pipelines..."
+				loading={!telemetryEngine.telemetry.clock}
 			>
-				{#if telemetry.clock}
-					<div class="flex justify-between py-0.5">
-						<span>Timer Resolution:</span>
-						<strong class="text-white">{telemetry.clock.minIncrementMs.toFixed(5)} ms</strong>
-					</div>
-					<div class="flex items-center justify-between py-0.5">
-						<span>Spectre Mitigation:</span>
+				{#if telemetryEngine.telemetry.clock}
+					<MetricRow
+						label="Timer Precision"
+						value="{telemetryEngine.telemetry.clock.minIncrementMs.toFixed(5)} ms"
+					/>
+					<MetricRow label="Mitigation Level">
 						<span
-							class={telemetry.clock.isCoarsened
+							class={telemetryEngine.telemetry.clock.isCoarsened
 								? 'text-rose-400 font-medium'
 								: 'text-emerald-400 font-medium'}
 						>
-							{telemetry.clock.estimatedMitigationLevel}
+							{telemetryEngine.telemetry.clock.estimatedMitigationLevel}
 						</span>
-					</div>
+					</MetricRow>
 				{/if}
 			</TelemetryTile>
 
-			<!-- [03] WASM INTERPRETATION SANDBOX -->
+			<!-- [06] MICROARCHITECTURAL CACHE JITTER -->
 			<TelemetryTile
-				title="[03] WASM Interpretation Sandbox"
-				icon={CodeXml}
-				iconClass="text-emerald-400"
-				loading={!telemetry.wasm}
-				loadingText="Testing byte compilation restrictions..."
-			>
-				{#if telemetry.wasm}
-					<div class="flex items-center justify-between py-0.5">
-						<span>Dynamic Compilation:</span>
-						<Badge variant={telemetry.wasm.allowed ? 'emerald' : 'rose'}>
-							{telemetry.wasm.allowed ? 'UNRESTRICTED' : 'BLOCKED'}
-						</Badge>
-					</div>
-					{#if telemetry.wasm.allowed}
-						<div class="flex justify-between py-0.5">
-							<span>JIT Compile Time:</span>
-							<strong class="text-white">{telemetry.wasm.compileDurationMs.toFixed(3)} ms</strong>
-						</div>
-					{/if}
-				{/if}
-			</TelemetryTile>
-
-			<!-- [04] BOUNDARY EXPLORATION & EGRESS -->
-			<TelemetryTile
-				title="[04] Boundary Exploration & Egress"
-				icon={Network}
-				iconClass="text-purple-400"
-				loading={!telemetry.egress}
-				loadingText="Measuring isolate boundary allowances..."
-			>
-				{#if telemetry.memory}
-					<div class="flex justify-between py-0.5">
-						<span>Max Safe WASM Allocation:</span>
-						<strong class="text-purple-400">{telemetry.memory.MaxSafeWasmAllocationMb} MB</strong>
-					</div>
-				{/if}
-				{#if telemetry.egress}
-					<div class="flex items-center justify-between py-0.5">
-						<span>Outbound Egress:</span>
-						<Badge variant={telemetry.egress.outboundAccess ? 'emerald' : 'rose'}>
-							{telemetry.egress.outboundAccess ? 'OPEN' : 'FIREWALLED'}
-						</Badge>
-					</div>
-					{#if telemetry.egress.pingMs !== -1}
-						<div class="flex justify-between py-0.5">
-							<span>Egress Latency:</span>
-							<strong class="text-white">{telemetry.egress.pingMs.toFixed(1)} ms</strong>
-						</div>
-					{/if}
-				{/if}
-			</TelemetryTile>
-
-			<!-- [05] MICROTASK CONCURRENCY MESH -->
-			<TelemetryTile
-				title="[05] Microtask Concurrency Mesh"
+				title="[06] Microarchitectural Cache"
 				icon={Cpu}
-				iconClass="text-blue-400"
-				loading={!telemetry.concurrency}
-				loadingText="Evaluating microtask starvation ceilings..."
+				iconClass="text-indigo-400"
+				loading={!telemetryEngine.telemetry.cacheJitter}
 			>
-				{#if telemetry.concurrency}
-					<div class="flex justify-between py-0.5">
-						<span>Event Loop Lag:</span>
-						<strong class="text-emerald-400"
-							>{telemetry.concurrency.eventLoopLagMs.toFixed(3)} ms</strong
-						>
-					</div>
-					<div class="flex justify-between py-0.5">
-						<span>Sync Burn (20ms):</span>
-						<strong class="text-purple-400"
-							>{telemetry.concurrency.syncBurnOps.toLocaleString()} ops</strong
-						>
-					</div>
+				{#if telemetryEngine.telemetry.cacheJitter}
+					<MetricRow
+						label="L1/L2 Mean Stride"
+						value="{telemetryEngine.telemetry.cacheJitter.l1L2AccessTimeNs} ns"
+						valueClass="text-indigo-300"
+					/>
+					<MetricRow
+						label="Jitter Variance"
+						value="{(telemetryEngine.telemetry.cacheJitter.varianceRatio * 100).toFixed(1)}%"
+						valueClass={telemetryEngine.telemetry.cacheJitter.varianceRatio > 0.3
+							? 'text-amber-400'
+							: 'text-emerald-400'}
+					/>
+					<MetricRow
+						label="Neighbor Activity"
+						value={telemetryEngine.telemetry.cacheJitter.noisyNeighborActivity}
+						valueClass="text-zinc-300 truncate max-w-32"
+					/>
 				{/if}
 			</TelemetryTile>
 
-			<!-- [06] STATE POLLUTION / MULTI-TENANCY -->
+			<!-- [07] WEBCRYPTO THROUGHPUT -->
 			<TelemetryTile
-				title="[06] State Pollution / Multi-Tenancy"
+				title="[07] WebCrypto Encryption"
+				icon={KeyRound}
+				iconClass="text-emerald-400"
+				loading={!telemetryEngine.telemetry.cryptoBench}
+			>
+				{#if telemetryEngine.telemetry.cryptoBench}
+					<MetricRow
+						label="SHA-256 Digest"
+						value="{telemetryEngine.telemetry.cryptoBench.sha256ThroughputMbSec} MB/s"
+						valueClass="text-emerald-400"
+					/>
+					<MetricRow
+						label="AES-GCM 256"
+						value="{telemetryEngine.telemetry.cryptoBench.aesGcmThroughputMbSec} MB/s"
+						valueClass="text-teal-400"
+					/>
+					<MetricRow
+						label="KeyGen Latency"
+						value="{telemetryEngine.telemetry.cryptoBench.keyGenLatencyMs} ms"
+						valueClass="text-zinc-300"
+					/>
+				{/if}
+			</TelemetryTile>
+
+			<!-- [08] STATE POLLUTION / MULTI-TENANCY -->
+			<TelemetryTile
+				title="[08] State Pollution Bleed"
 				icon={ShieldAlert}
 				iconClass="text-amber-400"
 				variant="bleed"
-				loading={!telemetry.contextLeak}
-				loadingText="Evaluating context security maps..."
+				loading={!telemetryEngine.telemetry.contextLeak}
 			>
-				{#if telemetry.contextLeak}
-					<div class="flex items-center justify-between py-0.5">
-						<span>Isolate Memory Bleed:</span>
-						<Badge variant={telemetry.contextLeak.contextIsPolluted ? 'rose' : 'emerald'}>
-							{telemetry.contextLeak.contextIsPolluted ? 'DIRTY HEAP CACHE' : 'PURE ISOLATE'}
-						</Badge>
-					</div>
-					<div class="flex items-center justify-between py-0.5">
-						<span>Node Instance:</span>
-						<span
-							class="rounded bg-white/5 px-1.5 py-0.5 text-[11px] font-mono text-cyan-400 border border-white/10"
+				{#if telemetryEngine.telemetry.contextLeak}
+					<MetricRow label="Isolate Bleed">
+						<Badge
+							variant={telemetryEngine.telemetry.contextLeak.contextIsPolluted ? 'rose' : 'emerald'}
 						>
-							{telemetry.contextLeak.currentAssignedMarker}
+							{telemetryEngine.telemetry.contextLeak.contextIsPolluted
+								? 'DIRTY HEAP'
+								: 'PURE ISOLATE'}
+						</Badge>
+					</MetricRow>
+					<MetricRow label="Assigned Marker">
+						<span
+							class="rounded bg-white/5 px-1 py-0.5 text-[10px] text-cyan-400 border border-white/10"
+						>
+							{telemetryEngine.telemetry.contextLeak.currentAssignedMarker}
 						</span>
-					</div>
+					</MetricRow>
 				{/if}
 			</TelemetryTile>
 
-			<!-- [07] ENGINE JIT PRIVILEGES -->
+			<!-- [09] ENGINE JIT PRIVILEGES -->
 			<TelemetryTile
-				title="[07] Engine JIT Privileges"
+				title="[09] Engine JIT Privileges"
 				icon={Zap}
 				iconClass="text-amber-400"
-				loading={!telemetry.jit}
-				loadingText="Testing engine compilation policies..."
+				loading={!telemetryEngine.telemetry.jit}
 			>
-				{#if telemetry.jit}
-					<div class="flex items-center justify-between py-0.5">
-						<span>Runtime Evaluation:</span>
-						<Badge variant={telemetry.jit.dynamicEvalAllowed ? 'emerald' : 'rose'}>
-							{telemetry.jit.dynamicEvalAllowed ? 'ALLOWED' : 'BLOCKED'}
+				{#if telemetryEngine.telemetry.jit}
+					<MetricRow label="Dynamic Eval">
+						<Badge variant={telemetryEngine.telemetry.jit.dynamicEvalAllowed ? 'emerald' : 'rose'}>
+							{telemetryEngine.telemetry.jit.dynamicEvalAllowed ? 'ALLOWED' : 'BLOCKED'}
 						</Badge>
-					</div>
-					{#if telemetry.jit.dynamicEvalAllowed}
-						<div class="flex justify-between py-0.5">
-							<span>Eval Execution:</span>
-							<strong class="text-white">{telemetry.jit.evalDurationMs.toFixed(3)} ms</strong>
-						</div>
+					</MetricRow>
+					{#if telemetryEngine.telemetry.jit.dynamicEvalAllowed}
+						<MetricRow
+							label="Eval Speed"
+							value="{telemetryEngine.telemetry.jit.evalDurationMs.toFixed(3)} ms"
+						/>
 					{/if}
 				{/if}
 			</TelemetryTile>
 
-			<!-- [08] ENTROPY HARVESTING SPEED -->
+			<!-- [10] HYPERVISOR ENTROPY HARVESTING -->
 			<TelemetryTile
-				title="[08] Entropy Harvesting Speed"
+				title="[10] Entropy Harvest Speed"
 				icon={Gauge}
 				iconClass="text-purple-400"
-				loading={!telemetry.entropy}
-				loadingText="Sourcing entropy seed rate..."
+				loading={!telemetryEngine.telemetry.entropy}
 			>
-				{#if telemetry.entropy}
-					<div class="flex justify-between py-0.5">
-						<span>Entropy Yield:</span>
-						<strong class="text-purple-400"
-							>{telemetry.entropy.entropyGenerationRateMbSec.toFixed(2)} MB/s</strong
-						>
-					</div>
-					<div class="flex justify-between py-0.5">
-						<span>Harvest Lag:</span>
-						<strong class="text-white">{telemetry.entropy.durationMs.toFixed(2)} ms</strong>
-					</div>
+				{#if telemetryEngine.telemetry.entropy}
+					<MetricRow
+						label="Entropy Yield"
+						value="{telemetryEngine.telemetry.entropy.entropyGenerationRateMbSec.toFixed(2)} MB/s"
+						valueClass="text-purple-400"
+					/>
+					<MetricRow
+						label="Harvest Latency"
+						value="{telemetryEngine.telemetry.entropy.durationMs.toFixed(2)} ms"
+					/>
 				{/if}
 			</TelemetryTile>
 
-			<!-- [09] EPHEMERAL DISK SUBSYSTEM -->
+			<!-- [11] WASM INTERPRETATION SANDBOX -->
 			<TelemetryTile
-				title="[09] Ephemeral Disk Subsystem"
-				icon={HardDrive}
-				iconClass="text-zinc-300"
-				loading={!telemetry.disk}
-				loadingText="Interrogating disk storage vectors..."
+				title="[11] WASM Sandbox Bounds"
+				icon={CodeXml}
+				iconClass="text-emerald-400"
+				loading={!telemetryEngine.telemetry.wasm}
 			>
-				{#if telemetry.disk}
-					<div class="flex items-center justify-between py-0.5">
-						<span>File System:</span>
-						<Badge variant={telemetry.disk.hasDiskAccess ? 'emerald' : 'rose'}>
-							{telemetry.disk.hasDiskAccess ? 'ACCESSIBLE' : 'SANDBOX LOCKOUT'}
+				{#if telemetryEngine.telemetry.wasm}
+					<MetricRow label="Compilation">
+						<Badge variant={telemetryEngine.telemetry.wasm.allowed ? 'emerald' : 'rose'}>
+							{telemetryEngine.telemetry.wasm.allowed ? 'UNRESTRICTED' : 'BLOCKED'}
 						</Badge>
-					</div>
-					{#if telemetry.disk.hasDiskAccess}
-						<div class="flex justify-between py-0.5">
-							<span>Driver Base:</span>
-							<strong class="text-cyan-400">{telemetry.disk.diskType}</strong>
-						</div>
-						<div class="flex justify-between py-0.5">
-							<span>256KB Write:</span>
-							<strong class="text-white">{telemetry.disk.writeLatencyMs.toFixed(2)} ms</strong>
-						</div>
+					</MetricRow>
+					{#if telemetryEngine.telemetry.wasm.allowed}
+						<MetricRow
+							label="Compile Time"
+							value="{telemetryEngine.telemetry.wasm.compileDurationMs.toFixed(3)} ms"
+						/>
+					{/if}
+					{#if telemetryEngine.telemetry.memory}
+						<MetricRow
+							label="Max WASM Heap"
+							value="{telemetryEngine.telemetry.memory.MaxSafeWasmAllocationMb} MB"
+							valueClass="text-purple-400"
+						/>
 					{/if}
 				{/if}
 			</TelemetryTile>
 
-			<!-- [10] NETWORK SURVEILLANCE MATRIX -->
+			<!-- [12] SERIALIZATION & HEAP STRESS -->
 			<TelemetryTile
-				title="[10] Network Surveillance Matrix"
+				title="[12] Serialization Stress"
+				icon={Boxes}
+				iconClass="text-yellow-400"
+				loading={!telemetryEngine.telemetry.serializationStress}
+			>
+				{#if telemetryEngine.telemetry.serializationStress}
+					<MetricRow
+						label="JSON Throughput"
+						value="{telemetryEngine.telemetry.serializationStress.jsonThroughputMbSec} MB/s"
+						valueClass="text-yellow-400"
+					/>
+					<MetricRow
+						label="Structured Clone"
+						value="{telemetryEngine.telemetry.serializationStress.structuredCloneLatencyMs} ms"
+						valueClass="text-white"
+					/>
+					<MetricRow
+						label="Payload Scale"
+						value="{Math.round(
+							telemetryEngine.telemetry.serializationStress.payloadSizeBytes / 1024
+						)} KB"
+						valueClass="text-zinc-400"
+					/>
+				{/if}
+			</TelemetryTile>
+
+			<!-- [13] EPHEMERAL DISK SUBSYSTEM -->
+			<TelemetryTile
+				title="[13] Ephemeral Disk Medium"
+				icon={HardDrive}
+				iconClass="text-zinc-300"
+				loading={!telemetryEngine.telemetry.disk}
+			>
+				{#if telemetryEngine.telemetry.disk}
+					<MetricRow label="File System">
+						<Badge variant={telemetryEngine.telemetry.disk.hasDiskAccess ? 'emerald' : 'rose'}>
+							{telemetryEngine.telemetry.disk.hasDiskAccess ? 'ACCESSIBLE' : 'SANDBOXED'}
+						</Badge>
+					</MetricRow>
+					{#if telemetryEngine.telemetry.disk.hasDiskAccess}
+						<MetricRow
+							label="Storage Type"
+							value={telemetryEngine.telemetry.disk.diskType}
+							valueClass="text-cyan-400 truncate max-w-32"
+						/>
+						<MetricRow
+							label="256KB Write"
+							value="{telemetryEngine.telemetry.disk.writeLatencyMs.toFixed(2)} ms"
+						/>
+					{/if}
+				{/if}
+			</TelemetryTile>
+
+			<!-- [14] BOUNDARY EXPLORATION & EGRESS -->
+			<TelemetryTile
+				title="[14] Outbound Egress Pipeline"
+				icon={Network}
+				iconClass="text-purple-400"
+				loading={!telemetryEngine.telemetry.egress}
+			>
+				{#if telemetryEngine.telemetry.egress}
+					<MetricRow label="Internet Egress">
+						<Badge variant={telemetryEngine.telemetry.egress.outboundAccess ? 'emerald' : 'rose'}>
+							{telemetryEngine.telemetry.egress.outboundAccess ? 'OPEN' : 'FIREWALLED'}
+						</Badge>
+					</MetricRow>
+					{#if telemetryEngine.telemetry.egress.pingMs !== -1}
+						<MetricRow
+							label="Gateway Ping"
+							value="{telemetryEngine.telemetry.egress.pingMs.toFixed(1)} ms"
+						/>
+					{/if}
+				{/if}
+			</TelemetryTile>
+
+			<!-- [15] MULTI-RESOLVER EGRESS MESH -->
+			<TelemetryTile
+				title="[15] Multi-Resolver DNS Mesh"
+				icon={Globe}
+				iconClass="text-blue-400"
+				loading={!telemetryEngine.telemetry.multiEgressMatrix}
+			>
+				{#if telemetryEngine.telemetry.multiEgressMatrix}
+					<MetricRow
+						label="Cloudflare (1.1.1.1)"
+						value="{telemetryEngine.telemetry.multiEgressMatrix.cloudflareDnsMs} ms"
+						valueClass="text-orange-400"
+					/>
+					<MetricRow
+						label="Google (8.8.8.8)"
+						value="{telemetryEngine.telemetry.multiEgressMatrix.googleDnsMs} ms"
+						valueClass="text-blue-400"
+					/>
+					<MetricRow
+						label="Quad9 (9.9.9.9)"
+						value="{telemetryEngine.telemetry.multiEgressMatrix.quad9DnsMs} ms"
+						valueClass="text-purple-400"
+					/>
+				{/if}
+			</TelemetryTile>
+
+			<!-- [16] NETWORK SURVEILLANCE MATRIX -->
+			<TelemetryTile
+				title="[16] Network Surveillance"
 				icon={Eye}
 				iconClass="text-orange-400"
 				variant="surveillance"
-				loading={!telemetry.surveillance}
-				loadingText="Deconstructing header footprints..."
+				loading={!telemetryEngine.telemetry.surveillance}
 			>
-				{#if telemetry.surveillance}
-					<div class="flex justify-between py-0.5">
-						<span>Client IP Gateway:</span>
-						<strong class="text-blue-400">{telemetry.surveillance.clientIpHeaderLeaked}</strong>
-					</div>
-					<div class="flex justify-between py-0.5">
-						<span>Proxy Routing Path:</span>
-						<strong class="text-white"
-							>{telemetry.surveillance.proxyChainDetected ? 'MULTI-HOP' : 'DIRECT'}</strong
-						>
-					</div>
-					<div class="flex justify-between py-0.5">
-						<span>Privacy Vector:</span>
-						<strong class="text-cyan-400">{telemetry.surveillance.anonymityScore}/100</strong>
-					</div>
+				{#if telemetryEngine.telemetry.surveillance}
+					<MetricRow
+						label="Client IP Header"
+						value={telemetryEngine.telemetry.surveillance.clientIpHeaderLeaked}
+						valueClass="text-blue-400 truncate max-w-32"
+					/>
+					<MetricRow
+						label="Routing Path"
+						value={telemetryEngine.telemetry.surveillance.proxyChainDetected
+							? 'MULTI-HOP'
+							: 'DIRECT'}
+					/>
+					<MetricRow
+						label="Privacy Index"
+						value="{telemetryEngine.telemetry.surveillance.anonymityScore}/100"
+						valueClass="text-cyan-400"
+					/>
 				{/if}
 			</TelemetryTile>
 
-			<!-- [11] CLIENT DEVICE CORRELATION -->
+			<!-- [17] MICROTASK CONCURRENCY MESH -->
 			<TelemetryTile
-				title="[11] Client Device Correlation"
+				title="[17] Concurrency & Event Loop"
+				icon={Cpu}
+				iconClass="text-blue-400"
+				loading={!telemetryEngine.telemetry.concurrency}
+			>
+				{#if telemetryEngine.telemetry.concurrency}
+					<MetricRow
+						label="Event Loop Lag"
+						value="{telemetryEngine.telemetry.concurrency.eventLoopLagMs.toFixed(3)} ms"
+						valueClass="text-emerald-400"
+					/>
+					<MetricRow
+						label="Sync 20ms Burn"
+						value="{telemetryEngine.telemetry.concurrency.syncBurnOps.toLocaleString()} ops"
+						valueClass="text-purple-400"
+					/>
+				{/if}
+			</TelemetryTile>
+
+			<!-- [18] CLIENT PRIVACY & DEVICE MATRIX -->
+			<TelemetryTile
+				title="[18] Client Privacy Matrix"
 				icon={Laptop}
 				iconClass="text-blue-400"
 				variant="client"
-				loading={!telemetry.client}
-				loadingText="Gathering local device profiles..."
+				loading={!telemetryEngine.telemetry.client}
 			>
-				{#if telemetry.client}
-					<div class="flex justify-between py-0.5">
-						<span>Logical Cores:</span>
-						<strong class="text-white">{telemetry.client.cores} Threads</strong>
-					</div>
-					<div class="flex justify-between py-0.5">
-						<span>GPU Renderer:</span>
-						<strong class="text-cyan-400 truncate max-w-42.5" title={telemetry.client.gpu.renderer}>
-							{telemetry.client.gpu.renderer}
-						</strong>
-					</div>
-					<div class="flex justify-between py-0.5">
-						<span>WebGPU API:</span>
-						<strong class={telemetry.client.webGPU ? 'text-emerald-400' : 'text-zinc-500'}>
-							{telemetry.client.webGPU ? 'Available' : 'Unavailable'}
-						</strong>
-					</div>
+				{#if telemetryEngine.telemetry.client}
+					<MetricRow
+						label="Cores / Threads"
+						value="{telemetryEngine.telemetry.client.cores} Cores"
+					/>
+					<MetricRow
+						label="Audio Farbling"
+						value={telemetryEngine.telemetry.client.audio.isAudioFarbled
+							? 'FARBLE ACTIVE'
+							: 'UNALTERED'}
+						valueClass={telemetryEngine.telemetry.client.audio.isAudioFarbled
+							? 'text-amber-400'
+							: 'text-zinc-400'}
+					/>
+					<MetricRow
+						label="System Fonts"
+						value="{telemetryEngine.telemetry.client.fonts.detectedFontCount} detected"
+						valueClass="text-cyan-400"
+					/>
+					<MetricRow
+						label="GPU Renderer"
+						value={telemetryEngine.telemetry.client.gpu.renderer}
+						valueClass="text-cyan-400 truncate max-w-32"
+					/>
 				{/if}
 			</TelemetryTile>
 
-			<!-- [12] TELEMETRY CORE CONTROLLER -->
+			<!-- [19] TELEMETRY CORE CONTROLLER -->
 			<TelemetryTile
-				title="[12] Telemetry Core Controller"
+				title="[19] Telemetry Controller"
 				icon={Play}
 				iconClass="text-cyan-400"
 				variant="command"
 			>
 				<div class="space-y-2">
-					<div class="flex items-center justify-between py-0.5">
-						<span>Engine State:</span>
-						<Badge variant={streamActive ? 'emerald' : 'zinc'}>
-							{streamActive ? 'INTERROGATING' : 'IDLE'}
+					<MetricRow label="Engine Status">
+						<Badge variant={telemetryEngine.streamActive ? 'emerald' : 'zinc'}>
+							{telemetryEngine.streamActive ? 'INTERROGATING' : 'IDLE'}
 						</Badge>
-					</div>
-					<div class="flex justify-between py-0.5">
-						<span>Gateway Ingress:</span>
-						<strong class="text-white"
-							>{networkLatency !== null ? `${networkLatency} ms` : 'UNPROBED'}</strong
-						>
-					</div>
+					</MetricRow>
+					<MetricRow
+						label="Gateway Latency"
+						value={telemetryEngine.networkLatency !== null
+							? `${telemetryEngine.networkLatency} ms`
+							: 'UNPROBED'}
+					/>
 				</div>
 
 				<button
-					onclick={streamDiagnostics}
-					disabled={streamActive}
-					class="mt-4 flex w-full items-center justify-between rounded border border-cyan-500/30 bg-cyan-500/10 px-4 py-2.5 font-mono text-xs font-semibold text-cyan-400 transition-all hover:border-cyan-500/50 hover:bg-cyan-500/20 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+					onclick={() => telemetryEngine.launch()}
+					disabled={telemetryEngine.streamActive}
+					class="mt-4 flex w-full items-center justify-between rounded border border-cyan-500/30 bg-cyan-500/10 px-4 py-2.5 font-mono text-xs font-semibold text-cyan-400 transition-all hover:border-cyan-500/50 hover:bg-cyan-500/20 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
 				>
-					<span>{streamActive ? 'PROBING HEAP STACK...' : 'LAUNCH ADVERSARIAL INSPECTION'}</span>
+					<span
+						>{telemetryEngine.streamActive
+							? 'PROBING RUNTIME STACK...'
+							: 'LAUNCH ADVERSARIAL INSPECTION'}</span
+					>
 					<Play size={14} class="fill-current" />
 				</button>
 			</TelemetryTile>
 		</div>
 
 		<!-- Failure Banner -->
-		{#if streamHaltedUnexpectedly}
+		{#if telemetryEngine.streamHaltedUnexpectedly}
 			<div
 				class="mt-8 flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 p-4 text-rose-400 font-mono text-xs"
 			>
@@ -491,8 +608,8 @@
 				<div>
 					<h5 class="font-semibold text-rose-300">Isolate Execution Halted</h5>
 					<p class="mt-0.5 text-rose-400/80">
-						Container memory limit breached, execution runtime hit a fatal uncaught exception, or
-						CPU limits were enforced by the hypervisor.
+						{telemetryEngine.errorMessage ||
+							'Container memory limit breached, execution runtime hit a fatal uncaught exception, or CPU limits were enforced by the hypervisor.'}
 					</p>
 				</div>
 			</div>

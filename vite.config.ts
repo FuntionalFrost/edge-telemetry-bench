@@ -9,7 +9,9 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit({
 			preprocess: vitePreprocess(),
-			adapter: adapter()
+			adapter: adapter({
+				runtime: 'nodejs24.x'
+			})
 		})
 	]
 });

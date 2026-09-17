@@ -14,29 +14,36 @@
 
 ## Overview
 
-**`edge-telemetry-bench`** is a high-precision diagnostic and adversarial inspection tool built with **SvelteKit**, **Tailwind CSS v4**, and **`@lucide/svelte`**. It stress-tests and interrogates edge execution environments (such as Vercel Edge Functions, AWS Lambda@Edge, and Cloudflare Isolates) to measure runtime boundaries, side-channel timing limits, state isolation, and security controls in real time over an asynchronous NDJSON stream.
+**`edge-telemetry-bench`** is a high-precision diagnostic and adversarial inspection tool built with **SvelteKit**, **Svelte 5 Runes**, **Tailwind CSS v4**, and **`@lucide/svelte`**. It stress-tests and interrogates edge execution environments (such as Vercel Edge Functions, AWS Lambda@Edge, and Cloudflare Isolates) to measure runtime boundaries, side-channel timing limits, state isolation, and security controls in real time over an asynchronous NDJSON stream.
 
-By executing synthetic workloads, memory probes, and platform fingerprinting inside the server isolate and browser client, `edge-telemetry-bench` surfaces critical metrics regarding multi-tenant security, JIT privileges, hardware exposure, and network egress capabilities.
+Built upon a modular Svelte 5 probe registry pipeline and universal reactive state engine (`telemetry.svelte.ts`), `edge-telemetry-bench` surfaces critical metrics regarding multi-tenant security, Spectre side-channels, JIT privileges, microarchitectural cache jitter, hardware exposure, and client privacy farbling.
 
 ---
 
 ## Key Telemetry & Diagnostic Vectors
 
-The dashboard continuously streams and analyzes 11 core vectors across server isolates and client runtimes:
+The dashboard continuously streams and analyzes 18 core vectors across server isolates and client runtimes:
 
 |   #    | Diagnostic Vector                   | Measurement Focus                                  | Primary Metrics Probed                                                               |
 | :----: | :---------------------------------- | :------------------------------------------------- | :----------------------------------------------------------------------------------- |
-| **01** | **Server Isolate Environment**      | Isolate life cycle & runtime footprint             | Uptime (`uptimeMs`), invocation count, global context keys count                     |
-| **02** | **Side-Channel Clock Resolution**   | Microsecond timing precision & Spectre mitigations | High-resolution timer granularity (`minIncrementMs`), timer coarsening level         |
-| **03** | **WASM Interpretation Sandbox**     | WebAssembly execution restrictions                 | Dynamic WASM compilation permissions, JIT compilation latency (`compileDurationMs`)  |
-| **04** | **Boundary Exploration & Egress**   | Heap caps & outbound network permissions           | Max safe WebAssembly memory allocation (`MB`), outbound internet egress, ping RTT    |
-| **05** | **Microtask Concurrency Mesh**      | Event loop starvation & thread execution           | Event loop scheduling lag (`ms`), synchronous CPU burn capacity (20ms ops)           |
-| **06** | **State Pollution / Multi-Tenancy** | Cross-request isolate & memory bleed               | Global variable pollution across requests, assigned node/worker instance tags        |
-| **07** | **Engine JIT Privileges**           | Dynamic code execution safety                      | Dynamic code evaluation (`eval` / `Function()`) permissions and execution speed      |
-| **08** | **Entropy Harvesting Speed**        | Cryptographic seed generation throughput           | CSPRNG throughput rate (`MB/s`), entropy harvest duration                            |
-| **09** | **Ephemeral Disk Subsystem**        | Local container filesystem availability            | File system write capability, disk type inference, 256KB write latency               |
-| **10** | **Network Surveillance Matrix**     | Edge proxy headers & privacy boundaries            | Leaked client IP headers, proxy routing hops (Direct vs. Multi-Hop), anonymity score |
-| **11** | **Client Device Correlation**       | Client hardware fingerprinting                     | CPU core count, WebGL GPU renderer string, WebGPU support                            |
+| **01** | **Server Isolate Base**             | Isolate life cycle & runtime footprint             | Uptime (`uptimeMs`), invocation count, global context keys count                     |
+| **02** | **Cloud Platform & Region**         | Cloud hypervisor & execution environment           | Platform identity, cloud edge region, container architecture, Node/V8 runtime        |
+| **03** | **Lifecycle & Heap Delta**          | Cold boot vs warm instance state                   | Cold-start detection (`isColdStart`), instance ID tag, V8 heap allocation deltas     |
+| **04** | **Spectre Side-Channels**           | Speculative execution & timing attack surface      | `SharedArrayBuffer`, `Atomics` support, WASM SIMD128 vector compilation              |
+| **05** | **Clock Resolution & Jitter**       | Microsecond timing precision & Spectre mitigations | High-resolution timer granularity (`minIncrementMs`), timer coarsening level         |
+| **06** | **Microarchitectural Cache Jitter** | L1/L2 cache latency jitter & noisy neighbors       | Strided memory access latency (`ns`), jitter variance ratio, noisy neighbor activity |
+| **07** | **WebCrypto Encryption**            | Native cryptographic engine throughput             | WebCrypto SHA-256 (`MB/s`), AES-GCM 256 throughput (`MB/s`), keyGen latency          |
+| **08** | **State Pollution Bleed**           | Cross-request isolate & memory bleed               | Global variable pollution across requests, assigned node/worker instance tags        |
+| **09** | **Engine JIT Privileges**           | Dynamic code execution safety                      | Dynamic code evaluation (`eval` / `Function()`) permissions and execution speed      |
+| **10** | **Entropy Harvest Speed**           | Cryptographic seed generation throughput           | CSPRNG throughput rate (`MB/s`), entropy harvest duration                            |
+| **11** | **WASM Sandbox Bounds**             | WebAssembly execution restrictions                 | Dynamic WASM compilation permissions, JIT compilation latency (`compileDurationMs`)  |
+| **12** | **Serialization Stress**            | Heap pressure & object graph throughput            | JSON stringify/parse throughput (`MB/s`), structured clone latency, payload scale    |
+| **13** | **Ephemeral Disk Medium**           | Local container filesystem availability            | File system write capability, disk type inference, 256KB write latency               |
+| **14** | **Outbound Egress Pipeline**        | Outbound network permissions & internet access     | Outbound internet egress firewall status, ping RTT latency                           |
+| **15** | **Multi-Resolver DNS Mesh**         | Edge gateway DNS resolution speed                  | Concurrent HEAD latency to Cloudflare (`1.1.1.1`), Google (`8.8.8.8`), Quad9 DNS     |
+| **16** | **Network Surveillance**            | Edge proxy headers & privacy boundaries            | Leaked client IP headers, proxy routing hops (Direct vs. Multi-Hop), anonymity score |
+| **17** | **Concurrency & Event Loop**        | Event loop starvation & thread execution           | Microtask scheduling lag (`ms`), synchronous CPU burn capacity (20ms ops)            |
+| **18** | **Client Privacy Matrix**           | Client hardware & anti-fingerprint farbling        | AudioContext noise farbling, system font metrics, CPU cores, WebGL GPU renderer      |
 
 ---
 

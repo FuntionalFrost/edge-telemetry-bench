@@ -1,3 +1,25 @@
+<script module lang="ts">
+	import { tv, type VariantProps } from 'tailwind-variants';
+
+	export const telemetryTileVariants = tv({
+		base: 'group relative flex flex-col justify-between rounded-lg border bg-zinc-900/60 p-5 shadow-lg backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-black/60',
+		variants: {
+			variant: {
+				default: 'border-white/10 hover:border-white/20',
+				bleed: 'border-white/10 border-l-2 border-l-amber-400 hover:border-white/20',
+				surveillance: 'border-white/10 border-l-2 border-l-orange-500 hover:border-white/20',
+				client: 'border-white/10 border-l-2 border-l-blue-500 hover:border-white/20',
+				command: 'border-white/10 border-l-2 border-l-cyan-500 hover:border-white/20'
+			}
+		},
+		defaultVariants: {
+			variant: 'default'
+		}
+	});
+
+	export type TelemetryTileVariants = VariantProps<typeof telemetryTileVariants>;
+</script>
+
 <script lang="ts">
 	import type { Component, Snippet } from 'svelte';
 
@@ -5,9 +27,10 @@
 		title: string;
 		icon: Component<{ size?: number; class?: string }>;
 		iconClass?: string;
-		variant?: 'default' | 'bleed' | 'surveillance' | 'client' | 'command';
+		variant?: TelemetryTileVariants['variant'];
 		loading?: boolean;
 		loadingText?: string;
+		class?: string;
 		children?: Snippet;
 	}
 
@@ -18,23 +41,14 @@
 		variant = 'default',
 		loading = false,
 		loadingText = 'Awaiting stream connection...',
+		class: className = '',
 		children
 	}: Props = $props();
 
-	const variantBorderClasses: Record<string, string> = {
-		default: 'border-white/10 hover:border-white/20',
-		bleed: 'border-white/10 border-l-2 border-l-amber-400 hover:border-white/20',
-		surveillance: 'border-white/10 border-l-2 border-l-orange-500 hover:border-white/20',
-		client: 'border-white/10 border-l-2 border-l-blue-500 hover:border-white/20',
-		command: 'border-white/10 border-l-2 border-l-cyan-500 hover:border-white/20'
-	};
+	let tileClass = $derived(telemetryTileVariants({ variant, class: className }));
 </script>
 
-<div
-	class="group relative flex flex-col justify-between rounded-lg border bg-zinc-900/60 p-5 shadow-lg backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:shadow-2xl hover:shadow-black/60 {variantBorderClasses[
-		variant
-	] || variantBorderClasses.default}"
->
+<div class={tileClass}>
 	<div>
 		<!-- Card Header -->
 		<div class="mb-4 flex items-center justify-between border-b border-white/5 pb-3">

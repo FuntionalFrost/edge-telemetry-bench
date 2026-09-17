@@ -56,10 +56,6 @@ export async function gatherClientMetrics(): Promise<ClientHardwareMetrics> {
 		}
 		canvasHash = Math.abs(hash).toString(16).toUpperCase();
 
-		// CORRECT FARBLING DETECTION:
-		// We make a slight canvas modification and read it again.
-		// Privacy browsers (Brave/Safari) apply a distinct noise vector on *every single read operation*.
-		// If the canvas is altered predictably but the delta values fluctuate abnormally, it's farbling.
 		ctx.fillRect(10, 10, 30, 10);
 		const secondDataUrl = canvas.toDataURL();
 		const thirdDataUrl = canvas.toDataURL();
@@ -70,12 +66,101 @@ export async function gatherClientMetrics(): Promise<ClientHardwareMetrics> {
 		}
 	}
 
-	// --- 3. ACTIVE NETWORK-LEVEL AD-BLOCKER SNOOPING ---
+	// --- 3. AUDIOCONTEXT FINGERPRINTING & FARBLING DETECTOR ---
+	let audioHash = 'UNSUPPORTED';
+	let isAudioFarbled = false;
+	try {
+		const AudioContextClass =
+			window.OfflineAudioContext ||
+			(window as unknown as { webkitOfflineAudioContext?: typeof OfflineAudioContext })
+				.webkitOfflineAudioContext;
+
+		if (AudioContextClass) {
+			const renderAudioSample = async (): Promise<Float32Array> => {
+				const audioCtx = new AudioContextClass(1, 44100, 44100);
+				const osc = audioCtx.createOscillator();
+				osc.type = 'triangle';
+				osc.frequency.setValueAtTime(10000, audioCtx.currentTime);
+
+				const compressor = audioCtx.createDynamicsCompressor();
+				compressor.threshold.setValueAtTime(-50, audioCtx.currentTime);
+				compressor.knee.setValueAtTime(40, audioCtx.currentTime);
+				compressor.ratio.setValueAtTime(12, audioCtx.currentTime);
+				compressor.attack.setValueAtTime(0, audioCtx.currentTime);
+				compressor.release.setValueAtTime(0.25, audioCtx.currentTime);
+
+				osc.connect(compressor);
+				compressor.connect(audioCtx.destination);
+				osc.start(0);
+
+				const renderedBuffer = await audioCtx.startRendering();
+				return renderedBuffer.getChannelData(0);
+			};
+
+			const [sample1, sample2] = await Promise.all([renderAudioSample(), renderAudioSample()]);
+
+			let audioPolyHash = 0;
+			for (let i = 4500; i < 5000; i++) {
+				const val = sample1[i] || 0;
+				audioPolyHash = (audioPolyHash << 5) - audioPolyHash + Math.round(val * 100000);
+				audioPolyHash |= 0;
+
+				// Noise injection check (Safari / Brave Audio farbling)
+				if (Math.abs(val - (sample2[i] || 0)) > 0.0000001) {
+					isAudioFarbled = true;
+				}
+			}
+			audioHash = `AUD-${Math.abs(audioPolyHash).toString(16).toUpperCase()}`;
+		}
+	} catch {
+		audioHash = 'RESTRICTED';
+	}
+
+	// --- 4. SYSTEM FONT METRICS SIGNATURE ---
+	let fontSignature = 'SIG_NONE';
+	let detectedFontCount = 0;
+	if (ctx) {
+		const testFonts = [
+			'monospace',
+			'sans-serif',
+			'serif',
+			'Segoe UI',
+			'SF Pro Text',
+			'Roboto',
+			'Helvetica Neue',
+			'Courier New',
+			'Consolas',
+			'Ubuntu'
+		];
+		const testString = 'mmmmmmmmmmlli100!@#$';
+		let fontHash = 0;
+
+		const baseWidths: Record<string, number> = {};
+		for (const base of ['monospace', 'sans-serif', 'serif']) {
+			ctx.font = `72px ${base}`;
+			baseWidths[base] = ctx.measureText(testString).width;
+		}
+
+		for (const font of testFonts) {
+			ctx.font = `72px '${font}', monospace`;
+			const widthMono = ctx.measureText(testString).width;
+			ctx.font = `72px '${font}', sans-serif`;
+			const widthSans = ctx.measureText(testString).width;
+
+			if (widthMono !== baseWidths['monospace'] || widthSans !== baseWidths['sans-serif']) {
+				detectedFontCount++;
+			}
+
+			fontHash = (fontHash << 5) - fontHash + Math.round(widthMono + widthSans);
+			fontHash |= 0;
+		}
+		fontSignature = `FNT-${Math.abs(fontHash).toString(16).toUpperCase()}`;
+	}
+
+	// --- 5. ACTIVE NETWORK-LEVEL AD-BLOCKER SNOOPING ---
 	let adBlockerActive = false;
 	try {
 		const testAdUrl = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
-
-		// Ensure timeout signal creation won't throw on legacy engines
 		const controller = new AbortController();
 		const timeoutId = setTimeout(() => controller.abort(), 300);
 
@@ -87,8 +172,7 @@ export async function gatherClientMetrics(): Promise<ClientHardwareMetrics> {
 		adBlockerActive = true;
 	}
 
-	// --- 4. MEMORY LAYER EXTRACTION ---
-	// Safely check for the non-standard Chrome memory extension without using 'any'
+	// --- 6. MEMORY LAYER EXTRACTION ---
 	const memory =
 		typeof performance !== 'undefined' && 'memory' in performance
 			? {
@@ -100,7 +184,7 @@ export async function gatherClientMetrics(): Promise<ClientHardwareMetrics> {
 				}
 			: 'Restricted Sandboxed API';
 
-	// --- 5. COMPATIBILITY CORE EXTRACTION ---
+	// --- 7. COMPATIBILITY CORE EXTRACTION ---
 	let hardwareCores: number | 'Unknown' = 'Unknown';
 	try {
 		if (safeNavigator && typeof safeNavigator.hardwareConcurrency === 'number') {
@@ -120,6 +204,14 @@ export async function gatherClientMetrics(): Promise<ClientHardwareMetrics> {
 			canvasHash: `CANVAS-ID-${canvasHash}`,
 			isFarblingDetected,
 			adBlockerActive
+		},
+		audio: {
+			audioHash,
+			isAudioFarbled
+		},
+		fonts: {
+			fontSignature,
+			detectedFontCount
 		}
 	};
 }
