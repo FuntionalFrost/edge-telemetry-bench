@@ -12,10 +12,18 @@ export const GET: RequestHandler = async ({ request }) => {
 	(async () => {
 		try {
 			for (const probe of PROBE_REGISTRY) {
+				// Stop probe execution immediately if client disconnected or aborted
+				if (request.signal.aborted) {
+					break;
+				}
+
 				try {
 					const data = await probe.run({ request });
-					const chunk = { type: probe.type, data };
+					if (request.signal.aborted) {
+						break;
+					}
 
+					const chunk = { type: probe.type, data };
 					const validation = diagnosticStreamChunkSchema.safeParse(chunk);
 					if (!validation.success) {
 						console.error(
@@ -25,15 +33,37 @@ export const GET: RequestHandler = async ({ request }) => {
 						continue;
 					}
 
+					if (request.signal.aborted) {
+						break;
+					}
+
 					await writer.write(encoder.encode(JSON.stringify(validation.data) + '\n'));
 				} catch (probeError) {
-					console.error(`Probe execution [${probe.type}] failed:`, probeError);
+					// Check if error is due to stream cancellation / client abort
+					if (
+						request.signal.aborted ||
+						(probeError &&
+							typeof probeError === 'object' &&
+							'name' in probeError &&
+							(probeError as { name: string }).name === 'AbortError')
+					) {
+						break;
+					}
+					// Only log unexpected probe errors when stream is healthy
+					if (probeError !== undefined) {
+						console.error(
+							`Probe execution [${probe.type}] failed:`,
+							probeError instanceof Error ? probeError.stack || probeError.message : probeError
+						);
+					}
 				}
 			}
 		} catch (streamError) {
-			console.error('Fatal diagnostic stream failure:', streamError);
+			if (!request.signal.aborted) {
+				console.error('Fatal diagnostic stream failure:', streamError);
+			}
 		} finally {
-			// CRITICAL: Ensure stream closure even on client disconnect
+			// Ensure writer cleanup on stream completion or client abort
 			try {
 				await writer.close();
 			} catch {
