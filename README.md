@@ -22,7 +22,7 @@ Built upon a modular Svelte 5 probe registry pipeline and universal reactive sta
 
 ## Key Telemetry & Diagnostic Vectors
 
-The dashboard continuously streams and analyzes 18 core vectors across server isolates and client runtimes:
+The dashboard continuously streams and analyzes 26 core vectors across server isolates and client runtimes:
 
 |   #    | Diagnostic Vector                   | Measurement Focus                                  | Primary Metrics Probed                                                               |
 | :----: | :---------------------------------- | :------------------------------------------------- | :----------------------------------------------------------------------------------- |
@@ -44,6 +44,14 @@ The dashboard continuously streams and analyzes 18 core vectors across server is
 | **16** | **Network Surveillance**            | Edge proxy headers & privacy boundaries            | Leaked client IP headers, proxy routing hops (Direct vs. Multi-Hop), anonymity score |
 | **17** | **Concurrency & Event Loop**        | Event loop starvation & thread execution           | Microtask scheduling lag (`ms`), synchronous CPU burn capacity (20ms ops)            |
 | **18** | **Client Privacy Matrix**           | Client hardware & anti-fingerprint farbling        | AudioContext noise farbling, system font metrics, CPU cores, WebGL GPU renderer      |
+| **19** | **Client Hints Forensics**          | High-entropy user agent data & brand architecture  | `navigator.userAgentData` brands, platform architecture, bitness, mobile tag         |
+| **20** | **Network Information Interface**   | Real-time connection quality & cellular telemetry  | Effective connection type (4G/5G/WiFi), downlink Mbps, RTT latency, saveData state   |
+| **21** | **Resource Timing Profiling**       | Asset pipeline latency & transfer bottlenecks      | Total resource count, decoded transfer size, script/CSS/fetch timing averages        |
+| **22** | **WebRTC ICE Gathering**            | Local interface & STUN candidate discovery         | ICE candidate types (host/srflx/relay), discovered STUN IPs, protocol matrix         |
+| **23** | **Network Latency & Jitter**        | Multi-sample round-trip packet variance            | Minimum RTT, maximum RTT, mean latency, packet jitter deviation variance             |
+| **24** | **Long Tasks & Thread Sched.**      | Main thread blocking & CPU starvation monitoring   | Long task execution count (>50ms), max task duration, total blocking duration        |
+| **25** | **rAF Frame Rate & Drops**          | Display refresh rate & rendering pipeline drops    | Measured FPS refresh rate, dropped frames count, rAF frame interval variance         |
+| **26** | **DOM Layout Thrashing Benchmark**  | Forced synchronous layout & reflow throughput      | 50-cycle layout thrash duration (`ms`), throughput ops/sec, style recalculation cost |
 
 ---
 
@@ -52,7 +60,7 @@ The dashboard continuously streams and analyzes 18 core vectors across server is
 - **Framework:** [SvelteKit](https://kit.svelte.dev/) (Svelte 5 Runes API)
 - **Adapter:** [@sveltejs/adapter-vercel](https://github.com/sveltejs/kit/tree/main/packages/adapter-vercel) (Vercel Serverless & Edge Functions)
 - **Styling & CSS:** [Tailwind CSS v4](https://tailwindcss.com/) with CRT scanline aesthetics
-- **UI Architecture:** Bespoke Svelte 5 Micro-Components (Zero-dependency UI)
+- **UI Architecture:** Svelte 5 Micro-Components (`<TelemetryTile>`, `<MetricRow>`, `<Badge>`) with `tailwind-variants` & [Yaxa](https://github.com/) v1.10.0 integration
 - **Icons:** [@lucide/svelte](https://lucide.dev/) (Tree-shakeable inline SVG icons)
 - **Validation & Schemas:** [Zod](https://zod.dev/) v4
 - **Deployment Platform:** [Vercel](https://vercel.com/) (Edge Functions & Node.js Serverless Functions)

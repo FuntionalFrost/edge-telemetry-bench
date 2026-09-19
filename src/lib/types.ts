@@ -181,7 +181,66 @@ export const diagnosticStreamChunkSchema = z.discriminatedUnion('type', [
 	})
 ]);
 
-// Client Telemetry Schema
+// Client Telemetry Sub-Schemas
+export const clientHintsSchema = z.strictObject({
+	brands: z.array(z.strictObject({ brand: z.string(), version: z.string() })),
+	mobile: z.boolean(),
+	platform: z.string(),
+	architecture: z.string(),
+	bitness: z.string(),
+	model: z.string()
+});
+
+export const networkInfoSchema = z.strictObject({
+	effectiveType: z.string(),
+	downlinkMb: z.number(),
+	rttMs: z.number(),
+	saveData: z.boolean()
+});
+
+export const resourceTimingSchema = z.strictObject({
+	subresourceCount: z.number(),
+	avgDnsMs: z.number(),
+	avgTcpMs: z.number(),
+	avgTtfbMs: z.number(),
+	totalTransferKb: z.number()
+});
+
+export const webrtcIceSchema = z.strictObject({
+	iceGatheringDurationMs: z.number(),
+	candidateCount: z.number(),
+	candidateTypes: z.array(z.string()),
+	protocols: z.array(z.string())
+});
+
+export const networkJitterSchema = z.strictObject({
+	pingJitterMs: z.number(),
+	minPingMs: z.number(),
+	maxPingMs: z.number(),
+	packetStability: z.enum(['Ultra Stable', 'Low Jitter', 'Moderate Variance', 'High Jitter'])
+});
+
+export const longTasksSchema = z.strictObject({
+	longTaskCount: z.number(),
+	maxTaskDurationMs: z.number(),
+	totalBlockingTimeMs: z.number(),
+	observerSupported: z.boolean()
+});
+
+export const frameTimingSchema = z.strictObject({
+	estimatedRefreshRateHz: z.number(),
+	realtimeFps: z.number(),
+	droppedFrames: z.number(),
+	frameJitterMs: z.number()
+});
+
+export const layoutThrashingSchema = z.strictObject({
+	opsPerSec: z.number(),
+	avgReflowMs: z.number(),
+	totalBenchmarkMs: z.number()
+});
+
+// Master Client Hardware Metrics Schema
 export const clientHardwareMetricsSchema = z.strictObject({
 	cores: z.union([z.number(), z.literal('Unknown')]),
 	gpu: z.strictObject({ vendor: z.string(), renderer: z.string() }),
@@ -203,13 +262,30 @@ export const clientHardwareMetricsSchema = z.strictObject({
 	fonts: z.strictObject({
 		fontSignature: z.string(),
 		detectedFontCount: z.number()
-	})
+	}),
+	clientHints: clientHintsSchema.nullable(),
+	connection: networkInfoSchema.nullable(),
+	resourceTiming: resourceTimingSchema.nullable(),
+	webrtc: webrtcIceSchema.nullable(),
+	networkJitter: networkJitterSchema.nullable(),
+	longTasks: longTasksSchema.nullable(),
+	frameTiming: frameTimingSchema.nullable(),
+	layoutThrashing: layoutThrashingSchema.nullable()
 });
 
 // Compile out the TypeScript types purely from the schemas
 export type DiagnosticStreamChunk = z.infer<typeof diagnosticStreamChunkSchema>;
 export type DiagnosticChunkType = DiagnosticStreamChunk['type'];
 export type ClientHardwareMetrics = z.infer<typeof clientHardwareMetricsSchema>;
+
+export type ClientHintsMetric = z.infer<typeof clientHintsSchema>;
+export type NetworkInfoMetric = z.infer<typeof networkInfoSchema>;
+export type ResourceTimingMetric = z.infer<typeof resourceTimingSchema>;
+export type WebRtcIceMetric = z.infer<typeof webrtcIceSchema>;
+export type NetworkJitterMetric = z.infer<typeof networkJitterSchema>;
+export type LongTasksMetric = z.infer<typeof longTasksSchema>;
+export type FrameTimingMetric = z.infer<typeof frameTimingSchema>;
+export type LayoutThrashingMetric = z.infer<typeof layoutThrashingSchema>;
 
 /**
  * DRY Type Mapper: Distributes the union and maps each 'type' literal
