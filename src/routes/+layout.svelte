@@ -4,8 +4,13 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { YaxaApp } from 'yaxa-svelte';
 	import { siteConfig } from '../site.config';
+	import type { Snippet } from 'svelte';
 
-	let { children } = $props();
+	interface Props {
+		children: Snippet;
+	}
+
+	let { children }: Props = $props();
 </script>
 
 <svelte:head>

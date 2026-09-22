@@ -27,5 +27,4 @@ vite.config.ts.timestamp-*
 /.idea
 
 # AI
-GEMINI.md
-/.gemini
+AGENTS.md
