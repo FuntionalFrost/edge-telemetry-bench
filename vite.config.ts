@@ -13,7 +13,7 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit({
 			preprocess: vitePreprocess(),
-			adapter: isNode ? adapterNode() : adapterVercel()
+			adapter: isNode ? adapterNode() : adapterVercel({ runtime: 'nodejs24.x' })
 		})
 	]
 });

@@ -159,7 +159,7 @@
 			<span class="animate-pulse font-medium">{loadingText}</span>
 		</div>
 	{:else if children}
-		<div class="flex flex-1 flex-col justify-between gap-2 font-mono text-xs text-zinc-300">
+		<div class="flex flex-1 flex-col gap-2 font-mono text-xs text-zinc-300">
 			{@render children()}
 		</div>
 	{/if}

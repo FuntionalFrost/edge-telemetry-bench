@@ -67,3 +67,37 @@
 [data-bits-tooltip-arrow] {
 	display: none !important;
 }
+
+/* Tactical Cyber Dark Scrollbars */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: rgba(34, 211, 238, 0.25) #06080e;
+}
+
+::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+
+::-webkit-scrollbar-track {
+	background: #06080e;
+	border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+	background: rgba(34, 211, 238, 0.25);
+	border-radius: 3px;
+	border: 1px solid rgba(34, 211, 238, 0.15);
+	transition:
+		background-color 0.2s,
+		box-shadow 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: rgba(34, 211, 238, 0.55);
+	box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+}
+
+::-webkit-scrollbar-corner {
+	background: #06080e;
+}

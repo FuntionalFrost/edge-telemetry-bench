@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![SvelteKit](https://img.shields.io/badge/SvelteKit-2.x-FF3E00.svg)](https://kit.svelte.dev/)
 [![Svelte 5](https://img.shields.io/badge/Svelte-5%20Runes-FF3E00.svg)](https://svelte.dev/)
-[![Node.js](https://img.shields.io/badge/Node.js-26-339933.svg)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-24%20|%2026-339933.svg)](https://nodejs.org/)
 [![pnpm](https://img.shields.io/badge/pnpm-11-F69220.svg)](https://pnpm.io/)
 [![Vercel](https://img.shields.io/badge/Deploy-Vercel-000000.svg)](https://vercel.com/)
 
@@ -16,42 +16,53 @@
 
 **`edge-telemetry-bench`** is a high-precision diagnostic and adversarial inspection tool built with **SvelteKit**, **Svelte 5 Runes**, **Tailwind CSS v4**, and **`@lucide/svelte`**. It stress-tests and interrogates edge execution environments (such as Vercel Edge Functions, AWS Lambda@Edge, and Cloudflare Isolates) to measure runtime boundaries, side-channel timing limits, state isolation, and security controls in real time over an asynchronous NDJSON stream.
 
-Built upon a modular Svelte 5 probe registry pipeline and universal reactive state engine (`telemetry.svelte.ts`), `edge-telemetry-bench` surfaces critical metrics regarding multi-tenant security, Spectre side-channels, JIT privileges, microarchitectural cache jitter, hardware exposure, and client privacy farbling.
+Built upon a **Hybrid Declarative Vector Registry** and universal reactive state engine (`telemetry.svelte.ts`), `edge-telemetry-bench` surfaces critical metrics regarding multi-tenant security, Spectre side-channels, JIT privileges, microarchitectural cache jitter, hardware exposure, and client privacy farbling.
 
 ---
 
 ## Key Telemetry & Diagnostic Vectors
 
-The dashboard continuously streams and analyzes 26 core vectors across server isolates and client runtimes:
+The dashboard continuously streams and analyzes **27 vectors** across 6 domain categories:
 
-|   #    | Diagnostic Vector                   | Measurement Focus                                  | Primary Metrics Probed                                                               |
-| :----: | :---------------------------------- | :------------------------------------------------- | :----------------------------------------------------------------------------------- |
-| **01** | **Server Isolate Base**             | Isolate life cycle & runtime footprint             | Uptime (`uptimeMs`), invocation count, global context keys count                     |
-| **02** | **Cloud Platform & Region**         | Cloud hypervisor & execution environment           | Platform identity, cloud edge region, container architecture, Node/V8 runtime        |
-| **03** | **Lifecycle & Heap Delta**          | Cold boot vs warm instance state                   | Cold-start detection (`isColdStart`), instance ID tag, V8 heap allocation deltas     |
-| **04** | **Spectre Side-Channels**           | Speculative execution & timing attack surface      | `SharedArrayBuffer`, `Atomics` support, WASM SIMD128 vector compilation              |
-| **05** | **Clock Resolution & Jitter**       | Microsecond timing precision & Spectre mitigations | High-resolution timer granularity (`minIncrementMs`), timer coarsening level         |
-| **06** | **Microarchitectural Cache Jitter** | L1/L2 cache latency jitter & noisy neighbors       | Strided memory access latency (`ns`), jitter variance ratio, noisy neighbor activity |
-| **07** | **WebCrypto Encryption**            | Native cryptographic engine throughput             | WebCrypto SHA-256 (`MB/s`), AES-GCM 256 throughput (`MB/s`), keyGen latency          |
-| **08** | **State Pollution Bleed**           | Cross-request isolate & memory bleed               | Global variable pollution across requests, assigned node/worker instance tags        |
-| **09** | **Engine JIT Privileges**           | Dynamic code execution safety                      | Dynamic code evaluation (`eval` / `Function()`) permissions and execution speed      |
-| **10** | **Entropy Harvest Speed**           | Cryptographic seed generation throughput           | CSPRNG throughput rate (`MB/s`), entropy harvest duration                            |
-| **11** | **WASM Sandbox Bounds**             | WebAssembly execution restrictions                 | Dynamic WASM compilation permissions, JIT compilation latency (`compileDurationMs`)  |
-| **12** | **Serialization Stress**            | Heap pressure & object graph throughput            | JSON stringify/parse throughput (`MB/s`), structured clone latency, payload scale    |
-| **13** | **Ephemeral Disk Medium**           | Local container filesystem availability            | File system write capability, disk type inference, 256KB write latency               |
-| **14** | **Outbound Egress Pipeline**        | Outbound network permissions & internet access     | Outbound internet egress firewall status, ping RTT latency                           |
-| **15** | **Multi-Resolver DNS Mesh**         | Edge gateway DNS resolution speed                  | Concurrent HEAD latency to Cloudflare (`1.1.1.1`), Google (`8.8.8.8`), Quad9 DNS     |
-| **16** | **Network Surveillance**            | Edge proxy headers & privacy boundaries            | Leaked client IP headers, proxy routing hops (Direct vs. Multi-Hop), anonymity score |
-| **17** | **Concurrency & Event Loop**        | Event loop starvation & thread execution           | Microtask scheduling lag (`ms`), synchronous CPU burn capacity (20ms ops)            |
-| **18** | **Client Privacy Matrix**           | Client hardware & anti-fingerprint farbling        | AudioContext noise farbling, system font metrics, CPU cores, WebGL GPU renderer      |
-| **19** | **Client Hints Forensics**          | High-entropy user agent data & brand architecture  | `navigator.userAgentData` brands, platform architecture, bitness, mobile tag         |
-| **20** | **Network Information Interface**   | Real-time connection quality & cellular telemetry  | Effective connection type (4G/5G/WiFi), downlink Mbps, RTT latency, saveData state   |
-| **21** | **Resource Timing Profiling**       | Asset pipeline latency & transfer bottlenecks      | Total resource count, decoded transfer size, script/CSS/fetch timing averages        |
-| **22** | **WebRTC ICE Gathering**            | Local interface & STUN candidate discovery         | ICE candidate types (host/srflx/relay), discovered STUN IPs, protocol matrix         |
-| **23** | **Network Latency & Jitter**        | Multi-sample round-trip packet variance            | Minimum RTT, maximum RTT, mean latency, packet jitter deviation variance             |
-| **24** | **Long Tasks & Thread Sched.**      | Main thread blocking & CPU starvation monitoring   | Long task execution count (>50ms), max task duration, total blocking duration        |
-| **25** | **rAF Frame Rate & Drops**          | Display refresh rate & rendering pipeline drops    | Measured FPS refresh rate, dropped frames count, rAF frame interval variance         |
-| **26** | **DOM Layout Thrashing Benchmark**  | Forced synchronous layout & reflow throughput      | 50-cycle layout thrash duration (`ms`), throughput ops/sec, style recalculation cost |
+|   #    | Diagnostic Vector             | Domain Category     | Primary Metrics Probed                                                                   |
+| :----: | :---------------------------- | :------------------ | :--------------------------------------------------------------------------------------- |
+| **01** | **Server Isolate Base**       | Server Isolates     | Uptime (`uptimeMs` / `s`), activation count, global context keys count                   |
+| **02** | **Cloud Platform & Region**   | Server Isolates     | Platform identity, cloud edge region, container architecture, Node/V8 runtime            |
+| **03** | **Lifecycle & Heap Delta**    | Server Isolates     | Cold-start state (`COLD BOOT` vs `WARM ISOLATE`), instance ID tag, V8 heap allocation    |
+| **04** | **Spectre Side-Channels**     | Security & Spectre  | `SharedArrayBuffer` exposure, WASM SIMD128 active state, vulnerability profile score     |
+| **05** | **Clock Resolution & Jitter** | Security & Spectre  | High-resolution timer granularity (`minIncrementMs` / `ns`), hypervisor clamping         |
+| **06** | **Microarchitectural Cache**  | Server Isolates     | L1/L2 strided memory latency (`ns`), jitter variance ratio, noisy neighbor activity      |
+| **07** | **WebCrypto Encryption**      | WebCrypto & Entropy | WebCrypto SHA-256 (`MB/s`), AES-GCM 256 throughput (`MB/s`), keyGen latency              |
+| **08** | **State Pollution Bleed**     | Security & Spectre  | Isolate context bleed (`DIRTY HEAP` vs `PURE ISOLATE`), assigned per-request token       |
+| **09** | **Engine JIT Privileges**     | Security & Spectre  | Dynamic code evaluation (`eval` / `Function()`) permissions and execution speed          |
+| **10** | **Entropy Harvest Speed**     | WebCrypto & Entropy | CSPRNG throughput rate (`MB/s`), sub-millisecond entropy harvest latency (`µs`)          |
+| **11** | **WASM Sandbox Bounds**       | Security & Spectre  | Dynamic WASM compilation permissions, JIT compile latency (`compileDurationMs`)          |
+| **12** | **Serialization Stress**      | Server Isolates     | JSON throughput (`MB/s`), structured clone latency, payload scale (`KB`)                 |
+| **13** | **Ephemeral Disk Medium**     | Server Isolates     | Local container filesystem state (`/tmp`), storage medium, 256KB write latency           |
+| **14** | **Outbound Egress Pipeline**  | Egress & DNS        | Outbound internet egress firewall status (`OPEN` vs `FIREWALLED`), gateway ping RTT      |
+| **15** | **Multi-Resolver DNS Mesh**   | Egress & DNS        | Concurrent HEAD latency to Cloudflare (`1.1.1.1`), Google (`8.8.8.8`), Quad9 (`9.9.9.9`) |
+| **16** | **Network Surveillance**      | Egress & DNS        | Leaked client IP headers, proxy routing hops (Direct vs Multi-Hop), anonymity score      |
+| **17** | **Concurrency & Event Loop**  | Server Isolates     | Microtask event loop scheduling lag (`ms`), synchronous CPU burn ops (20ms)              |
+| **18** | **Client Privacy Matrix**     | Client Forensics    | Web Audio farbling detection, system font metrics count, CPU cores, WebGL GPU unmask     |
+| **19** | **Client Hints (UA-CH)**      | Client Forensics    | High-entropy User-Agent Client Hints (`platform`, `architecture`, `bitness`)             |
+| **20** | **Network Connection API**    | Client Forensics    | Effective connection type (4G/5G/WiFi), downlink bandwidth (`MB/s`), client RTT          |
+| **21** | **Subresource Timing**        | Client Forensics    | PerformanceResourceTiming asset count, average TTFB (`ms`), transfer volume (`MB`)       |
+| **22** | **WebRTC ICE Discovery**      | Client Forensics    | Interactive Connectivity Establishment (ICE) candidate gathering duration & types        |
+| **23** | **Network Packet Jitter**     | Client Forensics    | Ping jitter variance (`ms`), min-max ping range, stability rating classification         |
+| **24** | **Long Tasks & Thread Lag**   | Client Forensics    | PerformanceObserver long task stalls (>50ms), max task duration, total blocking time     |
+| **25** | **rAF Refresh & Frame Drops** | Client Forensics    | Physical display refresh rate (`Hz`), realtime rendering FPS, dropped frame count        |
+| **26** | **DOM Layout Thrashing**      | Client Forensics    | Forced synchronous reflow throughput (`ops/s`), mean reflow duration (`ms`)              |
+| **27** | **Telemetry Controller**      | Controller          | Real-time NDJSON stream pipeline status, gateway latency, adversarial run trigger        |
+
+---
+
+## Architectural Highlights
+
+- **Executive Summary HUD Banner:** Instant 4-pillar overview (Runtime Host, Spectre Risk, Network Mesh Anonymity, Client Forensics) above the telemetry grid.
+- **Hybrid Declarative Vector Registry:** All 26 diagnostic vector schemas, formatters, and gauge properties are centralized in [`src/lib/config/telemetry-registry.ts`](src/lib/config/telemetry-registry.ts), keeping the main page template down to ~55 lines.
+- **Adaptive Precision Formatting:** Automatic sub-millisecond unit scaling (`µs` vs `ms`), long uptime conversion (`s`), and transfer volume scaling (`KB`/`MB`).
+- **Semantic Alert Coloring:** Real-time dynamic color triggers that prevent false-positive alarms on healthy 0-value states while highlighting high-risk anomalies in high-contrast neon tones.
+- **Tactical Cyber Aesthetic:** Custom dark scanline backdrop, segmented LED CyberMeters, high-contrast tooltips, and bespoke cyber scrollbars.
 
 ---
 
@@ -60,7 +71,7 @@ The dashboard continuously streams and analyzes 26 core vectors across server is
 - **Framework:** [SvelteKit](https://kit.svelte.dev/) (Svelte 5 Runes API)
 - **Adapter:** [@sveltejs/adapter-vercel](https://github.com/sveltejs/kit/tree/main/packages/adapter-vercel) (Vercel Serverless & Edge Functions)
 - **Styling & CSS:** [Tailwind CSS v4](https://tailwindcss.com/) with CRT scanline aesthetics
-- **UI Architecture:** Svelte 5 Micro-Components (`<TelemetryTile>`, `<MetricRow>`, `<Badge>`) with `tailwind-variants` & [Yaxa](https://github.com/) v1.10.0 integration
+- **UI Architecture:** Svelte 5 Micro-Components (`<TelemetryTile>`, `<MetricRow>`, `<CyberMeter>`, `<Badge>`) with `tailwind-variants` & [Yaxa](https://github.com/) v1.10.0 integration
 - **Icons:** [@lucide/svelte](https://lucide.dev/) (Tree-shakeable inline SVG icons)
 - **Validation & Schemas:** [Zod](https://zod.dev/) v4
 - **Deployment Platform:** [Vercel](https://vercel.com/) (Edge Functions & Node.js Serverless Functions)
@@ -78,7 +89,7 @@ The dashboard continuously streams and analyzes 26 core vectors across server is
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/your-username/edge-telemetry-bench.git
+git clone https://github.com/FuntionalFrost/edge-telemetry-bench.git
 cd edge-telemetry-bench
 
 # 2. Install dependencies
@@ -121,7 +132,7 @@ Deploying `edge-telemetry-bench` is zero-config via direct Git integration with 
 
 ## Continuous Integration (CI)
 
-A lightweight GitHub Actions pipeline ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) automatically runs on every push and pull request to verify code quality and type correctness using [`pnpm/setup`](https://github.com/pnpm/setup) with Node.js 26:
+A lightweight GitHub Actions pipeline ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) automatically runs on every push and pull request to verify code quality and type correctness using [`pnpm/action-setup`](https://github.com/pnpm/action-setup) with Node.js 24:
 
 - `pnpm lint`: Code style and ESLint validation
 - `pnpm check`: Svelte 5 and TypeScript type diagnostics
@@ -132,19 +143,6 @@ A lightweight GitHub Actions pipeline ([`.github/workflows/ci.yml`](.github/work
 ## Security & Usage Disclaimer
 
 This tool is created for **security research, performance profiling, and edge architecture auditing**. Probing public edge runtimes with high memory/CPU stress tests may trigger rate limits or account suspensions on shared serverless platforms. Use responsibly and within your cloud provider's terms of service.
-
----
-
-## Contributing
-
-Contributions, issue reports, and PRs are welcome!
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-vector`)
-3. Commit your changes (`git commit -m 'Add new telemetry vector'`)
-4. Verify tests and linting (`pnpm check && pnpm lint && pnpm build`)
-5. Push to the branch (`git push origin feature/amazing-vector`)
-6. Open a Pull Request
 
 ---
 

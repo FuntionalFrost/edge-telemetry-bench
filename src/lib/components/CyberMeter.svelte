@@ -82,15 +82,23 @@
 	let resolved = $derived(segmentColorMap[variant] ?? segmentColorMap.default);
 </script>
 
-<div class="flex flex-col gap-1.5 py-1 font-mono {className}">
+<div class="mt-auto flex flex-col gap-1.5 pt-2 pb-0.5 font-mono {className}">
 	{#if label || showValue}
 		<div class="flex items-center justify-between text-[10.5px] tracking-wide text-zinc-300">
 			{#if label}
-				<span class="font-medium">{label}</span>
+				<span class="font-medium text-zinc-300">{label}</span>
 			{/if}
 			{#if showValue}
-				<span class="{resolved.text} font-bold">
-					{typeof value === 'number' ? value.toFixed(1) : value}{unit}
+				<span class="{resolved.text} font-bold font-mono">
+					{typeof value === 'number'
+						? Number.isInteger(value)
+							? value
+							: value.toFixed(1)
+						: value}{unit}
+				</span>
+			{:else}
+				<span class="text-[10px] font-mono text-zinc-400 font-medium">
+					{Math.round(percentage)}%
 				</span>
 			{/if}
 		</div>
@@ -104,8 +112,8 @@
 			{@const isOn = idx < activeSegments}
 			<div
 				class="h-full flex-1 rounded-[1px] transition-all duration-300 {isOn
-					? `${resolved.on} ${resolved.glow} border-t border-white/30`
-					: 'bg-zinc-800/50 border-t border-black/60'}"
+					? `${resolved.on} ${resolved.glow} border-t border-white/40`
+					: 'bg-zinc-800/40 border-t border-black/80'}"
 			></div>
 		{/each}
 	</div>
