@@ -13,6 +13,9 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit({
 			preprocess: vitePreprocess(),
+			compilerOptions: {
+				runes: true
+			},
 			adapter: isNode ? adapterNode() : adapterVercel({ runtime: 'nodejs24.x' })
 		})
 	]

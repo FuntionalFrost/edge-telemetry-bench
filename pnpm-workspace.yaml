@@ -8,4 +8,4 @@ allowBuilds:
   workerd: true
 
 minimumReleaseAgeExclude:
-  - yaxa-svelte@1.10.0
+  - yaxa-svelte@1.10.0 || 1.13.1 || 1.13.2
