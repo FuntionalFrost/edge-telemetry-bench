@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { telemetryEngine } from '$lib/client/telemetry.svelte';
+	import { telemetryEngine } from '#lib/client/telemetry.svelte.js';
 	import { Check, Copy, Download, RotateCcw } from '@lucide/svelte';
 </script>
 

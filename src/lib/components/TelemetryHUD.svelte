@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { telemetryEngine } from '$lib/client/telemetry.svelte';
-	import Badge from '$lib/components/Badge.svelte';
+	import { telemetryEngine } from '#lib/client/telemetry.svelte.js';
+	import Badge from '#lib/components/Badge.svelte';
 	import { Globe, MonitorPlay, Satellite, ShieldAlert } from '@lucide/svelte';
 </script>
 

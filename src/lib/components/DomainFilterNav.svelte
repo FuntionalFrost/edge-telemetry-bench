@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { DOMAIN_FILTERS, type DomainFilter } from '$lib/config/telemetry-registry';
+	import { DOMAIN_FILTERS, type DomainFilter } from '#lib/config/telemetry-registry.js';
 	import { Filter } from '@lucide/svelte';
 
 	interface Props {

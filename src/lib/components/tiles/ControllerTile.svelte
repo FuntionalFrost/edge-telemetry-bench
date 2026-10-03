@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { telemetryEngine } from '$lib/client/telemetry.svelte';
-	import Badge from '$lib/components/Badge.svelte';
-	import CyberMeter from '$lib/components/CyberMeter.svelte';
-	import MetricRow from '$lib/components/MetricRow.svelte';
-	import TelemetryTile from '$lib/components/TelemetryTile.svelte';
+	import { telemetryEngine } from '#lib/client/telemetry.svelte.js';
+	import Badge from '#lib/components/Badge.svelte';
+	import CyberMeter from '#lib/components/CyberMeter.svelte';
+	import MetricRow from '#lib/components/MetricRow.svelte';
+	import TelemetryTile from '#lib/components/TelemetryTile.svelte';
 	import { Play, Sparkles, Waypoints } from '@lucide/svelte';
 
 	interface Props {

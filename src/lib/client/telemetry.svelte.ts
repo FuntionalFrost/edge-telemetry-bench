@@ -1,5 +1,5 @@
 // src/lib/client/telemetry.svelte.ts
-import { CLIENT_PROBES } from '$lib/client/probes';
+import { CLIENT_PROBES } from '#lib/client/probes/index.js';
 import type {
 	CacheJitterChunk,
 	ClientHardwareMetrics,
@@ -22,8 +22,8 @@ import type {
 	SpectrePrimitivesChunk,
 	SurveillanceChunk,
 	WasmChunk
-} from '$lib/types';
-import { diagnosticStreamChunkSchema } from '$lib/types';
+} from '#lib/types.js';
+import { diagnosticStreamChunkSchema } from '#lib/types.js';
 import { SvelteDate } from 'svelte/reactivity';
 
 export interface TelemetryState {

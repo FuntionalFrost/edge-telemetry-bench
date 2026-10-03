@@ -1,5 +1,5 @@
 // src/lib/server/probes/index.ts
-import type { DiagnosticChunkType } from '$lib/types';
+import type { DiagnosticChunkType } from '#lib/types.js';
 import type { DiagnosticProbe } from '../types';
 
 import { identityProbe } from './identity.probe';

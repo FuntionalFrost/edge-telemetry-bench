@@ -41,9 +41,9 @@
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
 		"@lucide/svelte": "^1.46.0",
-		"@sveltejs/adapter-node": "^5.5.7",
-		"@sveltejs/adapter-vercel": "^6.3.3",
-		"@sveltejs/kit": "^2.70.3",
+		"@sveltejs/adapter-node": "^6.0.0",
+		"@sveltejs/adapter-vercel": "^7.0.0",
+		"@sveltejs/kit": "^3.0.0",
 		"@sveltejs/vite-plugin-svelte": "^7.3.0",
 		"@tailwindcss/typography": "^0.5.20",
 		"@tailwindcss/vite": "^4.3.3",
@@ -64,5 +64,9 @@
 	"dependencies": {
 		"yaxa-svelte": "1.13.2",
 		"zod": "^4.6.5"
+	},
+	"imports": {
+		"#lib": "./src/lib/index.js",
+		"#lib/*": "./src/lib/*"
 	}
 }

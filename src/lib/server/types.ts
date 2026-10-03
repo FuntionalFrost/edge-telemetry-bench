@@ -1,5 +1,5 @@
 // src/lib/server/types.ts
-import type { ChunkDataMap, DiagnosticChunkType } from '$lib/types';
+import type { ChunkDataMap, DiagnosticChunkType } from '#lib/types.js';
 import type { RequestEvent } from '@sveltejs/kit';
 
 export interface ProbeContext {

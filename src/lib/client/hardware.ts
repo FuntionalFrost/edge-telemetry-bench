@@ -1,5 +1,5 @@
 // src/lib/client/hardware.ts
-import type { ClientHardwareMetrics } from '$lib/types';
+import type { ClientHardwareMetrics } from '#lib/types.js';
 import { CLIENT_PROBES } from './probes';
 
 /**

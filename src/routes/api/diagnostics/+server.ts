@@ -1,5 +1,5 @@
-import { PROBE_REGISTRY } from '$lib/server/probes';
-import { diagnosticStreamChunkSchema } from '$lib/types';
+import { PROBE_REGISTRY } from '#lib/server/probes/index.js';
+import { diagnosticStreamChunkSchema } from '#lib/types.js';
 import { z } from 'zod';
 import type { RequestHandler } from './$types';
 

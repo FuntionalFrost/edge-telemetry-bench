@@ -1,10 +1,10 @@
 <script lang="ts">
-	import type { TelemetryState } from '$lib/client/telemetry.svelte';
-	import Badge from '$lib/components/Badge.svelte';
-	import CyberMeter from '$lib/components/CyberMeter.svelte';
-	import MetricRow from '$lib/components/MetricRow.svelte';
-	import TelemetryTile from '$lib/components/TelemetryTile.svelte';
-	import type { AnyVectorDef } from '$lib/config/telemetry-registry';
+	import type { TelemetryState } from '#lib/client/telemetry.svelte.js';
+	import Badge from '#lib/components/Badge.svelte';
+	import CyberMeter from '#lib/components/CyberMeter.svelte';
+	import MetricRow from '#lib/components/MetricRow.svelte';
+	import TelemetryTile from '#lib/components/TelemetryTile.svelte';
+	import type { AnyVectorDef } from '#lib/config/telemetry-registry.js';
 
 	interface Props {
 		def: AnyVectorDef;

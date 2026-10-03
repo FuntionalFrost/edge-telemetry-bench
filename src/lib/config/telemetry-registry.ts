@@ -1,7 +1,7 @@
 // src/lib/config/telemetry-registry.ts
-import type { TelemetryState } from '$lib/client/telemetry.svelte';
-import type { BadgeVariants } from '$lib/components/Badge.svelte';
-import type { TelemetryTileVariants } from '$lib/components/TelemetryTile.svelte';
+import type { TelemetryState } from '#lib/client/telemetry.svelte.js';
+import type { BadgeVariants } from '#lib/components/Badge.svelte';
+import type { TelemetryTileVariants } from '#lib/components/TelemetryTile.svelte';
 import {
 	Activity,
 	Atom,

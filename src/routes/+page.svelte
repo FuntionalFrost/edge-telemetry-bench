@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { telemetryEngine } from '$lib/client/telemetry.svelte';
-	import DomainFilterNav from '$lib/components/DomainFilterNav.svelte';
-	import TelemetryHeader from '$lib/components/TelemetryHeader.svelte';
-	import TelemetryHUD from '$lib/components/TelemetryHUD.svelte';
-	import TelemetryTileRenderer from '$lib/components/TelemetryTileRenderer.svelte';
-	import ControllerTile from '$lib/components/tiles/ControllerTile.svelte';
-	import { STANDARD_VECTORS, type DomainFilter } from '$lib/config/telemetry-registry';
+	import { telemetryEngine } from '#lib/client/telemetry.svelte.js';
+	import DomainFilterNav from '#lib/components/DomainFilterNav.svelte';
+	import TelemetryHeader from '#lib/components/TelemetryHeader.svelte';
+	import TelemetryHUD from '#lib/components/TelemetryHUD.svelte';
+	import TelemetryTileRenderer from '#lib/components/TelemetryTileRenderer.svelte';
+	import ControllerTile from '#lib/components/tiles/ControllerTile.svelte';
+	import { STANDARD_VECTORS, type DomainFilter } from '#lib/config/telemetry-registry.js';
 	import { TriangleAlert } from '@lucide/svelte';
 	import { onMount } from 'svelte';
 
