@@ -41,16 +41,6 @@ export interface DomainFilterItem {
 	count: number;
 }
 
-export const DOMAIN_FILTERS: DomainFilterItem[] = [
-	{ id: 'all', label: 'ALL DOMAINS', count: 27 },
-	{ id: 'server', label: 'SERVER ISOLATES', count: 7 },
-	{ id: 'security', label: 'SECURITY & SPECTRE', count: 5 },
-	{ id: 'crypto', label: 'WEBCRYPTO & ENTROPY', count: 2 },
-	{ id: 'network', label: 'EGRESS & DNS', count: 3 },
-	{ id: 'client', label: 'CLIENT FORENSICS', count: 9 },
-	{ id: 'command', label: 'CONTROLLER', count: 1 }
-];
-
 // Formatting Utilities
 export function formatUptime(ms: number): string {
 	if (ms >= 1000) {
@@ -1105,4 +1095,34 @@ export const STANDARD_VECTORS: AnyVectorDef[] = [
 			label: 'Layout Mutation Speed'
 		}
 	})
+];
+
+export const DOMAIN_FILTERS: DomainFilterItem[] = [
+	{ id: 'all', label: 'ALL DOMAINS', count: STANDARD_VECTORS.length + 1 },
+	{
+		id: 'server',
+		label: 'SERVER ISOLATES',
+		count: STANDARD_VECTORS.filter((v) => v.domain === 'server').length
+	},
+	{
+		id: 'security',
+		label: 'SECURITY & SPECTRE',
+		count: STANDARD_VECTORS.filter((v) => v.domain === 'security').length
+	},
+	{
+		id: 'crypto',
+		label: 'WEBCRYPTO & ENTROPY',
+		count: STANDARD_VECTORS.filter((v) => v.domain === 'crypto').length
+	},
+	{
+		id: 'network',
+		label: 'EGRESS & DNS',
+		count: STANDARD_VECTORS.filter((v) => v.domain === 'network').length
+	},
+	{
+		id: 'client',
+		label: 'CLIENT FORENSICS',
+		count: STANDARD_VECTORS.filter((v) => v.domain === 'client').length
+	},
+	{ id: 'command', label: 'CONTROLLER', count: 1 }
 ];

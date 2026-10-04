@@ -70,6 +70,22 @@ const initialTelemetryState: TelemetryState = {
 	client: null
 };
 
+const SERVER_VECTOR_KEYS = (Object.keys(initialTelemetryState) as (keyof TelemetryState)[]).filter(
+	(k): k is Exclude<keyof TelemetryState, 'client'> => k !== 'client'
+);
+
+const CLIENT_VECTOR_KEYS = [
+	'fingerprint',
+	'clientHints',
+	'connection',
+	'resourceTiming',
+	'webrtc',
+	'networkJitter',
+	'longTasks',
+	'frameTiming',
+	'layoutThrashing'
+] as const;
+
 export class TelemetryEngine {
 	telemetry = $state<TelemetryState>({ ...initialTelemetryState });
 	streamActive = $state(false);
@@ -80,28 +96,16 @@ export class TelemetryEngine {
 	copied = $state(false);
 	autoPollTimer: ReturnType<typeof setInterval> | null = null;
 
-	readonly totalServerVectors = 18;
-	readonly totalClientVectors = 9;
-	readonly totalVectors = 27;
+	readonly totalServerVectors = SERVER_VECTOR_KEYS.length;
+	readonly totalClientVectors = CLIENT_VECTOR_KEYS.length;
+	readonly totalVectors = SERVER_VECTOR_KEYS.length + CLIENT_VECTOR_KEYS.length;
 
 	// Derived metrics
-	serverVectorCount = $derived(
-		Object.entries(this.telemetry).filter(([k, v]) => k !== 'client' && v !== null).length
-	);
+	serverVectorCount = $derived(SERVER_VECTOR_KEYS.filter((k) => this.telemetry[k] !== null).length);
 
 	clientVectorCount = $derived(
 		this.telemetry.client
-			? [
-					this.telemetry.client.clientHints,
-					this.telemetry.client.connection,
-					this.telemetry.client.resourceTiming,
-					this.telemetry.client.webrtc,
-					this.telemetry.client.networkJitter,
-					this.telemetry.client.longTasks,
-					this.telemetry.client.frameTiming,
-					this.telemetry.client.layoutThrashing,
-					this.telemetry.client.fingerprint
-				].filter((v) => v !== null).length
+			? CLIENT_VECTOR_KEYS.filter((k) => this.telemetry.client?.[k] !== null).length
 			: 0
 	);
 
@@ -267,33 +271,16 @@ export class TelemetryEngine {
 	exportTrace() {
 		if (typeof window === 'undefined') return;
 
+		const { client: clientForensics, ...serverVectors } = this.telemetry;
+
 		const payload = {
 			timestamp: new SvelteDate().toISOString(),
 			suite: 'Edge Telemetry Bench v0.1.0',
 			gatewayLatencyMs: this.networkLatency,
 			platform: this.telemetry.cloudMetadata?.platform ?? 'Unknown',
 			region: this.telemetry.cloudMetadata?.region ?? 'Unknown',
-			serverVectors: {
-				identity: this.telemetry.identity,
-				cloudMetadata: this.telemetry.cloudMetadata,
-				isolateLifecycle: this.telemetry.isolateLifecycle,
-				spectrePrimitives: this.telemetry.spectrePrimitives,
-				clock: this.telemetry.clock,
-				cacheJitter: this.telemetry.cacheJitter,
-				cryptoBench: this.telemetry.cryptoBench,
-				contextLeak: this.telemetry.contextLeak,
-				jit: this.telemetry.jit,
-				entropy: this.telemetry.entropy,
-				wasm: this.telemetry.wasm,
-				memory: this.telemetry.memory,
-				serializationStress: this.telemetry.serializationStress,
-				disk: this.telemetry.disk,
-				egress: this.telemetry.egress,
-				multiEgressMatrix: this.telemetry.multiEgressMatrix,
-				surveillance: this.telemetry.surveillance,
-				concurrency: this.telemetry.concurrency
-			},
-			clientForensics: this.telemetry.client
+			serverVectors,
+			clientForensics
 		};
 
 		const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
