@@ -25,6 +25,7 @@ import type {
 } from '#lib/types.js';
 import { diagnosticStreamChunkSchema } from '#lib/types.js';
 import { SvelteDate } from 'svelte/reactivity';
+import { toast } from 'yaxa-svelte';
 
 export interface TelemetryState {
 	identity: IdentityChunk | null;
@@ -292,6 +293,9 @@ export class TelemetryEngine {
 		a.click();
 		document.body.removeChild(a);
 		URL.revokeObjectURL(url);
+		toast.info('Forensic Trace Exported', {
+			description: 'Full vector JSON snapshot downloaded'
+		});
 	}
 
 	async copySummary(): Promise<void> {
@@ -314,8 +318,14 @@ export class TelemetryEngine {
 			setTimeout(() => {
 				this.copied = false;
 			}, 2000);
+			toast.success('Telemetry Report Copied', {
+				description: 'Markdown summary loaded to clipboard'
+			});
 		} catch (err) {
 			console.error('Failed to copy telemetry summary:', err);
+			toast.error('Clipboard Access Denied', {
+				description: 'Failed to write diagnostic report to clipboard'
+			});
 		}
 	}
 }

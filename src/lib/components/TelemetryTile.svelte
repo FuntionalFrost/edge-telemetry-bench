@@ -69,6 +69,7 @@
 <script lang="ts">
 	import type { Component, Snippet } from 'svelte';
 	import { setContext } from 'svelte';
+	import { springTilt } from 'yaxa-svelte';
 
 	interface Props {
 		title: string;
@@ -112,6 +113,7 @@
 </script>
 
 <div
+	use:springTilt={{ max: 4, perspective: 900, scale: 1.012 }}
 	role="button"
 	tabindex="0"
 	aria-label={title}
