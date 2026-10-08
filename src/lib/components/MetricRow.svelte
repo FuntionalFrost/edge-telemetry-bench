@@ -62,7 +62,7 @@
 
 <div class="flex items-center justify-between py-0.5 font-mono text-xs">
 	{#if tooltip}
-		<Tooltip side="top">
+		<Tooltip side="top" unstyled>
 			{#snippet trigger()}
 				<span
 					class="cursor-help text-zinc-300 underline decoration-dotted underline-offset-2 transition-colors {domainTriggerMap[
@@ -74,7 +74,7 @@
 			{/snippet}
 			{#snippet content()}
 				<div
-					class="-m-3 rounded-md border bg-[#05070c] p-2.5 text-left font-mono {domainBorderMap[
+					class="rounded-md border bg-[#05070c] p-2.5 text-left font-mono {domainBorderMap[
 						domain
 					] ?? domainBorderMap.default}"
 				>
