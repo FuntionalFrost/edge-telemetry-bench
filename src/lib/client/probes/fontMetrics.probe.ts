@@ -1,10 +1,14 @@
 // src/lib/client/probes/fontMetrics.probe.ts
 import type { ClientProbe } from '../types';
 
+let cachedFonts: { fontSignature: string; detectedFontCount: number } | null = null;
+
 export const fontMetricsProbe: ClientProbe<'fonts'> = {
 	key: 'fonts',
 	name: 'System Font Metrics Signature',
 	async run() {
+		if (cachedFonts) return cachedFonts;
+
 		if (typeof document === 'undefined') {
 			return { fontSignature: 'SSR-CONTEXT', detectedFontCount: 0 };
 		}
@@ -52,9 +56,10 @@ export const fontMetricsProbe: ClientProbe<'fonts'> = {
 			fontSignature = `FNT-${Math.abs(fontHash).toString(16).toUpperCase()}`;
 		}
 
-		return {
+		cachedFonts = {
 			fontSignature,
 			detectedFontCount
 		};
+		return cachedFonts;
 	}
 };

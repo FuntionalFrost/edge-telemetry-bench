@@ -27,7 +27,7 @@
 
 		<a
 			href={resolve('/')}
-			class="inline-block rounded border border-cyan-500/40 px-5 py-2 text-xs tracking-wider text-cyan-300 transition-all hover:border-cyan-400/70 hover:bg-cyan-950/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.2)]"
+			class="inline-block rounded border border-cyan-500/40 px-5 py-2 text-xs tracking-wider text-cyan-300 transition-shadow hover:border-cyan-400/70 hover:bg-cyan-950/50 hover:shadow-[0_0_20px_rgba(6,182,212,0.2)]"
 		>
 			RETURN TO INTERROGATOR
 		</a>

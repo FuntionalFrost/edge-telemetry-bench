@@ -1,10 +1,14 @@
 // src/lib/client/probes/gpuHardware.probe.ts
 import type { ClientProbe } from '../types';
 
+let cachedGpu: { vendor: string; renderer: string } | null = null;
+
 export const gpuHardwareProbe: ClientProbe<'gpu'> = {
 	key: 'gpu',
 	name: 'GPU Hardware Extraction',
 	async run() {
+		if (cachedGpu) return cachedGpu;
+
 		if (typeof document === 'undefined') {
 			return { vendor: 'SSR Environment', renderer: 'SSR Environment' };
 		}
@@ -31,6 +35,7 @@ export const gpuHardwareProbe: ClientProbe<'gpu'> = {
 			}
 		}
 
-		return { vendor: gpuVendor, renderer: gpuRenderer };
+		cachedGpu = { vendor: gpuVendor, renderer: gpuRenderer };
+		return cachedGpu;
 	}
 };

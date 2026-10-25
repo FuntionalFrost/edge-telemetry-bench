@@ -25,7 +25,7 @@
 	<div class="flex flex-wrap items-center gap-3">
 		<!-- Stream & Ingress HUD Pill -->
 		<div
-			class="flex items-center gap-2.5 rounded-lg border border-white/10 bg-[#06080e]/90 px-3 py-1.5 shadow-lg backdrop-blur-md"
+			class="flex items-center gap-2.5 rounded-lg border border-white/10 bg-[#06080e]/96 px-3 py-1.5 shadow-lg"
 		>
 			<span class="relative flex size-2.5">
 				{#if telemetryEngine.streamActive}
@@ -67,7 +67,7 @@
 			<!-- Auto-Poll Toggle -->
 			<button
 				onclick={() => telemetryEngine.toggleAutoPoll()}
-				class="flex cursor-pointer items-center gap-1.5 rounded-md border font-mono text-[11px] font-semibold transition-all {telemetryEngine.autoPoll
+				class="flex cursor-pointer items-center gap-1.5 rounded-md border font-mono text-[11px] font-semibold transition-shadow {telemetryEngine.autoPoll
 					? 'border-emerald-500/50 bg-emerald-500/20 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
 					: 'border-white/10 bg-zinc-900/80 text-zinc-400 hover:border-white/20 hover:text-zinc-200'}"
 				title="Toggle 3.5s continuous background telemetry interrogation"
@@ -82,7 +82,7 @@
 			<!-- Export JSON Trace -->
 			<button
 				onclick={() => telemetryEngine.exportTrace()}
-				class="flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-zinc-900/80 font-mono text-[11px] font-medium text-zinc-300 transition-all hover:border-cyan-500/50 hover:bg-cyan-950/40 hover:text-cyan-200 hover:shadow-[0_0_12px_rgba(6,182,212,0.25)]"
+				class="flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-zinc-900/80 font-mono text-[11px] font-medium text-zinc-300 transition-colors hover:border-cyan-500/50 hover:bg-cyan-950/40 hover:text-cyan-200 hover:shadow-[0_0_12px_rgba(6,182,212,0.25)]"
 				title="Download full forensic JSON telemetry snapshot"
 			>
 				<Download size={12} class="text-cyan-400" />
@@ -92,7 +92,7 @@
 			<!-- Copy Report -->
 			<button
 				onclick={() => void telemetryEngine.copySummary()}
-				class="flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-zinc-900/80 font-mono text-[11px] font-medium text-zinc-300 transition-all hover:border-emerald-500/50 hover:bg-emerald-950/40 hover:text-emerald-200 hover:shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+				class="flex cursor-pointer items-center gap-1.5 rounded-md border border-white/10 bg-zinc-900/80 font-mono text-[11px] font-medium text-zinc-300 transition-shadow hover:border-emerald-500/50 hover:bg-emerald-950/40 hover:text-emerald-200 hover:shadow-[0_0_12px_rgba(16,185,129,0.25)]"
 				title="Copy markdown diagnostic summary to clipboard"
 			>
 				{#if telemetryEngine.copied}

@@ -2,7 +2,7 @@
 	import { tv, type VariantProps } from 'yaxa-svelte';
 
 	export const telemetryTileVariants = tv({
-		base: 'group relative flex flex-col justify-between rounded-lg border border-white/12 bg-[#06080e]/92 p-5 shadow-xl backdrop-blur-md transition-all duration-200 hover:-translate-y-1 hover:shadow-2xl border-l-2 cursor-pointer active:scale-[0.985] active:brightness-125 select-none',
+		base: 'group relative flex flex-col justify-between rounded-lg border border-white/12 bg-[#06080e]/96 p-5 shadow-xl transition-colors transition-shadow duration-150 hover:shadow-2xl border-l-2 cursor-pointer yaxa-surface-elevated active:brightness-125 select-none',
 		variants: {
 			variant: {
 				default:
@@ -69,7 +69,6 @@
 <script lang="ts">
 	import type { Component, Snippet } from 'svelte';
 	import { setContext } from 'svelte';
-	import { springTilt } from 'yaxa-svelte';
 
 	interface Props {
 		title: string;
@@ -113,7 +112,6 @@
 </script>
 
 <div
-	use:springTilt={{ max: 4, perspective: 900, scale: 1.012 }}
 	role="button"
 	tabindex="0"
 	aria-label={title}
@@ -132,7 +130,7 @@
 			{title}
 		</h4>
 		<div
-			class="relative flex size-8 items-center justify-center rounded-md border shadow-inner backdrop-blur-md transition-all duration-300 group-hover:scale-105 {resolvedPodClass}"
+			class="relative flex size-8 items-center justify-center rounded-md border shadow-inner transition-colors duration-200 {resolvedPodClass}"
 		>
 			<!-- Subtle corner cyber notches -->
 			<span
@@ -142,10 +140,7 @@
 				class="pointer-events-none absolute -bottom-px -right-px size-1 rounded-br-sm border-b border-r border-current opacity-80"
 			></span>
 
-			<IconComponent
-				size={16}
-				class="{resolvedIconClass} transition-transform duration-300 group-hover:rotate-6"
-			/>
+			<IconComponent size={16} class={resolvedIconClass} />
 		</div>
 	</div>
 

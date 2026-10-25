@@ -26,7 +26,7 @@
 		<button
 			aria-pressed={activeDomain === filter.id}
 			onclick={() => handleSelect(filter.id)}
-			class="cursor-pointer rounded px-2.5 py-1 font-mono text-[11px] font-semibold transition-all {activeDomain ===
+			class="cursor-pointer rounded px-2.5 py-1 font-mono text-[11px] font-semibold transition-shadow {activeDomain ===
 			filter.id
 				? 'border border-cyan-500/60 bg-cyan-500/20 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.35)]'
 				: 'border border-white/10 bg-zinc-900/70 text-zinc-400 hover:border-white/25 hover:text-zinc-200'}"

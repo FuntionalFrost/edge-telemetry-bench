@@ -97,6 +97,16 @@ export class TelemetryEngine {
 	copied = $state(false);
 	autoPollTimer: ReturnType<typeof setInterval> | null = null;
 
+	constructor() {
+		if (typeof document !== 'undefined') {
+			document.addEventListener('visibilitychange', () => {
+				if (!document.hidden && this.autoPoll && !this.streamActive) {
+					void this.launch();
+				}
+			});
+		}
+	}
+
 	readonly totalServerVectors = SERVER_VECTOR_KEYS.length;
 	readonly totalClientVectors = CLIENT_VECTOR_KEYS.length;
 	readonly totalVectors = SERVER_VECTOR_KEYS.length + CLIENT_VECTOR_KEYS.length;
@@ -261,6 +271,7 @@ export class TelemetryEngine {
 		if (this.autoPoll) {
 			if (!this.streamActive) void this.launch();
 			this.autoPollTimer = setInterval(() => {
+				if (typeof document !== 'undefined' && document.hidden) return;
 				if (!this.streamActive) void this.launch();
 			}, 3500);
 		} else if (this.autoPollTimer) {

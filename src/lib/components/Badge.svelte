@@ -2,7 +2,7 @@
 	import { tv, type VariantProps } from 'yaxa-svelte';
 
 	export const badgeVariants = tv({
-		base: 'inline-flex items-center gap-1.5 rounded border px-2 py-0.5 font-mono text-[11px] font-semibold tracking-wide backdrop-blur-sm',
+		base: 'inline-flex items-center gap-1.5 rounded border px-2 py-0.5 font-mono text-[11px] font-semibold tracking-wide',
 		variants: {
 			variant: {
 				emerald:

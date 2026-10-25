@@ -7,7 +7,7 @@
 <section class="mb-6 grid grid-cols-1 gap-3 font-mono sm:grid-cols-2 lg:grid-cols-4">
 	<!-- Pillar 1: Runtime & Host -->
 	<div
-		class="flex flex-col justify-between rounded-lg border border-emerald-500/25 border-l-2 border-l-emerald-400 bg-[#06080e]/90 p-3 shadow-lg backdrop-blur-md"
+		class="flex flex-col justify-between rounded-lg border border-emerald-500/25 border-l-2 border-l-emerald-400 bg-[#06080e]/96 p-3 shadow-lg yaxa-surface-elevated"
 	>
 		<div class="flex items-center justify-between text-[11px] text-zinc-400">
 			<span
@@ -45,7 +45,7 @@
 
 	<!-- Pillar 2: Security & Side-Channels -->
 	<div
-		class="flex flex-col justify-between rounded-lg border border-rose-500/25 border-l-2 border-l-rose-400 bg-[#06080e]/90 p-3 shadow-lg backdrop-blur-md"
+		class="flex flex-col justify-between rounded-lg border border-rose-500/25 border-l-2 border-l-rose-400 bg-[#06080e]/96 p-3 shadow-lg yaxa-surface-elevated"
 	>
 		<div class="flex items-center justify-between text-[11px] text-zinc-400">
 			<span class="flex items-center gap-1.5 font-semibold tracking-wider text-rose-400 uppercase">
@@ -101,7 +101,7 @@
 
 	<!-- Pillar 3: Network & Anonymity -->
 	<div
-		class="flex flex-col justify-between rounded-lg border border-cyan-500/25 border-l-2 border-l-cyan-400 bg-[#06080e]/90 p-3 shadow-lg backdrop-blur-md"
+		class="flex flex-col justify-between rounded-lg border border-cyan-500/25 border-l-2 border-l-cyan-400 bg-[#06080e]/96 p-3 shadow-lg yaxa-surface-elevated"
 	>
 		<div class="flex items-center justify-between text-[11px] text-zinc-400">
 			<span class="flex items-center gap-1.5 font-semibold tracking-wider text-cyan-400 uppercase">
@@ -145,7 +145,7 @@
 
 	<!-- Pillar 4: Client Display & Concurrency -->
 	<div
-		class="flex flex-col justify-between rounded-lg border border-purple-500/25 border-l-2 border-l-purple-400 bg-[#06080e]/90 p-3 shadow-lg backdrop-blur-md"
+		class="flex flex-col justify-between rounded-lg border border-purple-500/25 border-l-2 border-l-purple-400 bg-[#06080e]/96 p-3 shadow-lg yaxa-surface-elevated"
 	>
 		<div class="flex items-center justify-between text-[11px] text-zinc-400">
 			<span

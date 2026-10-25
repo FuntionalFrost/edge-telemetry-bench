@@ -1,12 +1,18 @@
 // src/lib/client/probes/audioFingerprint.probe.ts
 import type { ClientProbe } from '../types';
 
+let cachedAudio: { audioHash: string; isAudioFarbled: boolean } | null = null;
+
 export const audioFingerprintProbe: ClientProbe<'audio'> = {
 	key: 'audio',
 	name: 'AudioContext Fingerprint & Farbling',
 	async run() {
 		if (typeof window === 'undefined') {
 			return { audioHash: 'SSR-CONTEXT', isAudioFarbled: false };
+		}
+
+		if (cachedAudio) {
+			return cachedAudio;
 		}
 
 		let audioHash = 'UNSUPPORTED';
@@ -58,9 +64,10 @@ export const audioFingerprintProbe: ClientProbe<'audio'> = {
 			audioHash = 'RESTRICTED';
 		}
 
-		return {
+		cachedAudio = {
 			audioHash,
 			isAudioFarbled
 		};
+		return cachedAudio;
 	}
 };

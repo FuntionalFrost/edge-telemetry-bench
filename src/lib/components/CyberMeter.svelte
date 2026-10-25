@@ -111,7 +111,7 @@
 		{#each Array.from({ length: segments }, (_, i) => i) as idx (idx)}
 			{@const isOn = idx < activeSegments}
 			<div
-				class="h-full flex-1 rounded-[1px] transition-all duration-300 {isOn
+				class="h-full flex-1 rounded-[1px] transition-colors duration-150 {isOn
 					? `${resolved.on} ${resolved.glow} border-t border-white/40`
 					: 'bg-zinc-800/40 border-t border-black/80'}"
 			></div>

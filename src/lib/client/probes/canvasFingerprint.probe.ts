@@ -1,10 +1,18 @@
 // src/lib/client/probes/canvasFingerprint.probe.ts
 import type { ClientProbe } from '../types';
 
+let cachedFingerprint: {
+	canvasHash: string;
+	isFarblingDetected: boolean;
+	adBlockerActive: boolean;
+} | null = null;
+
 export const canvasFingerprintProbe: ClientProbe<'fingerprint'> = {
 	key: 'fingerprint',
 	name: 'Canvas Fingerprint & Noise Farbling',
 	async run() {
+		if (cachedFingerprint) return cachedFingerprint;
+
 		if (typeof document === 'undefined') {
 			return { canvasHash: 'SSR-CONTEXT', isFarblingDetected: false, adBlockerActive: false };
 		}
@@ -57,10 +65,11 @@ export const canvasFingerprintProbe: ClientProbe<'fingerprint'> = {
 			adBlockerActive = true;
 		}
 
-		return {
+		cachedFingerprint = {
 			canvasHash: `CANVAS-ID-${canvasHash}`,
 			isFarblingDetected,
 			adBlockerActive
 		};
+		return cachedFingerprint;
 	}
 };

@@ -62,7 +62,7 @@
 
 <div class="flex items-center justify-between py-0.5 font-mono text-xs">
 	{#if tooltip}
-		<Tooltip side="top" unstyled>
+		<Tooltip side="top" unstyled class="z-50 max-w-sm">
 			{#snippet trigger()}
 				<span
 					class="cursor-help text-zinc-300 underline decoration-dotted underline-offset-2 transition-colors {domainTriggerMap[

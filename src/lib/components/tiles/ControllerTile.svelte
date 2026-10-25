@@ -50,7 +50,7 @@
 			<button
 				onclick={() => telemetryEngine.launch()}
 				disabled={telemetryEngine.streamActive}
-				class="flex w-full cursor-pointer items-center justify-between rounded-lg border border-cyan-500/40 bg-cyan-500/15 px-4 py-3 font-mono text-xs font-semibold text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.2)] transition-all hover:border-cyan-400 hover:bg-cyan-500/25 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+				class="flex w-full cursor-pointer items-center justify-between rounded-lg border border-cyan-500/40 bg-cyan-500/15 px-4 py-3 font-mono text-xs font-semibold text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.2)] transition-shadow duration-150 hover:border-cyan-400 hover:bg-cyan-500/25 active:brightness-125 disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				<span class="flex items-center gap-2">
 					<Sparkles size={14} class="text-cyan-400" />
@@ -68,8 +68,8 @@
 		<span class="font-mono text-[10px] uppercase tracking-wider text-zinc-400"
 			>Terminal Theme Accent</span
 		>
-		<div class="flex items-center gap-1.5">
-			{#each [{ id: 'sky', label: 'CYAN', color: 'bg-cyan-400' }, { id: 'emerald', label: 'MATRIX', color: 'bg-emerald-400' }, { id: 'amber', label: 'AMBER', color: 'bg-amber-400' }, { id: 'violet', label: 'SYNTH', color: 'bg-violet-400' }] as p (p.id)}
+		<div class="flex flex-wrap items-center gap-1.5">
+			{#each [{ id: 'sky', label: 'CYAN', color: 'bg-cyan-400' }, { id: 'emerald', label: 'MATRIX', color: 'bg-emerald-400' }, { id: 'amber', label: 'AMBER', color: 'bg-amber-400' }, { id: 'violet', label: 'SYNTH', color: 'bg-violet-400' }, { id: 'rose', label: 'RED ALERT', color: 'bg-rose-400' }, { id: 'indigo', label: 'QUANTUM', color: 'bg-indigo-400' }] as p (p.id)}
 				<button
 					type="button"
 					onclick={() => {
@@ -78,7 +78,7 @@
 							description: `Switched palette to ${p.id}`
 						});
 					}}
-					class="flex cursor-pointer items-center gap-1.5 rounded border px-2 py-0.5 font-mono text-[10px] font-semibold transition-all {theme.accent ===
+					class="flex cursor-pointer items-center gap-1.5 rounded border px-2 py-0.5 font-mono text-[10px] font-semibold transition-shadow duration-150 active:brightness-125 {theme.accent ===
 					p.id
 						? 'border-white/50 bg-white/15 text-white shadow-[0_0_10px_rgba(255,255,255,0.25)]'
 						: 'border-white/10 bg-black/40 text-zinc-400 hover:border-white/20 hover:text-zinc-200'}"
