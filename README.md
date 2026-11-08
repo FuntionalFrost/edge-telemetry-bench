@@ -2,13 +2,16 @@
 
 > **ISOLATE INTERROGATOR // SEC.SURVEILLANCE.MESH**  
 > An adversarial benchmarking suite and real-time telemetry interrogator built for serverless JavaScript isolates, edge runtimes, and client environment analysis.
+>
+> 🔗 **Live Demo:** [edge-telemetry-bench.vercel.app](https://edge-telemetry-bench.vercel.app)
 
+[![Live Demo](https://img.shields.io/badge/Demo-Online-00DC82.svg?style=flat&logo=vercel&logoColor=white)](https://edge-telemetry-bench.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![SvelteKit](https://img.shields.io/badge/SvelteKit-2.x-FF3E00.svg)](https://kit.svelte.dev/)
+[![SvelteKit](https://img.shields.io/badge/SvelteKit-3.x-FF3E00.svg)](https://kit.svelte.dev/)
 [![Svelte 5](https://img.shields.io/badge/Svelte-5%20Runes-FF3E00.svg)](https://svelte.dev/)
-[![Node.js](https://img.shields.io/badge/Node.js-24%20|%2026-339933.svg)](https://nodejs.org/)
-[![pnpm](https://img.shields.io/badge/pnpm-11-F69220.svg)](https://pnpm.io/)
-[![Vercel](https://img.shields.io/badge/Deploy-Vercel-000000.svg)](https://vercel.com/)
+[![Node.js](https://img.shields.io/badge/Node.js-24-339933.svg)](https://nodejs.org/)
+[![pnpm](https://img.shields.io/badge/pnpm-12-F69220.svg)](https://pnpm.io/)
+[![Vercel](https://img.shields.io/badge/Deploy-Vercel-000000.svg?logo=vercel&logoColor=white)](https://edge-telemetry-bench.vercel.app)
 
 ---
 
@@ -71,7 +74,7 @@ The dashboard continuously streams and analyzes **27 vectors** across 6 domain c
 - **Framework:** [SvelteKit](https://kit.svelte.dev/) (Svelte 5 Runes API)
 - **Adapter:** [@sveltejs/adapter-vercel](https://github.com/sveltejs/kit/tree/main/packages/adapter-vercel) (Vercel Serverless & Edge Functions)
 - **Styling & CSS:** [Tailwind CSS v4](https://tailwindcss.com/) with CRT scanline aesthetics
-- **UI Architecture:** Svelte 5 Micro-Components (`<TelemetryTile>`, `<MetricRow>`, `<CyberMeter>`, `<Badge>`) with `tailwind-variants` & [Yaxa](https://github.com/) v1.10.0 integration
+- **UI Architecture:** Svelte 5 Micro-Components (`<TelemetryTile>`, `<MetricRow>`, `<CyberMeter>`, `<Badge>`) with `tailwind-variants` & [Yaxa](https://github.com/FuntionalFrost/yaxa) v2.6.0 integration
 - **Icons:** [@lucide/svelte](https://lucide.dev/) (Tree-shakeable inline SVG icons)
 - **Validation & Schemas:** [Zod](https://zod.dev/) v4
 - **Deployment Platform:** [Vercel](https://vercel.com/) (Edge Functions & Node.js Serverless Functions)
@@ -82,8 +85,8 @@ The dashboard continuously streams and analyzes **27 vectors** across 6 domain c
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) v24 or v26
-- [pnpm](https://pnpm.io/) v11 (`corepack enable pnpm` or `npm install -g pnpm`)
+- [Node.js](https://nodejs.org/) v24
+- [pnpm](https://pnpm.io/) v12 (`corepack enable pnpm` or `npm install -g pnpm`)
 
 ### Installation
 
